@@ -14,15 +14,12 @@
 ///
 extern EFI_GUID gLoaderSerialPortInfoGuid;
 
-typedef struct {
-  UINT8      Revision;
-  UINT8      Reserved0[3];
-  UINT32     Type;
-  UINT32     BaseAddr;
-  UINT32     Baud;
-  UINT32     RegWidth;
-  UINT32     InputHertz;
-  UINT32     UartPciAddr;
+typedef struct {  
+  UINT16        Reversion;
+  BOOLEAN       UseMmio;
+  UINT8         RegisterWidth;
+  UINT32        BaudRate;
+  UINT64        RegisterBase;
 } SERIAL_PORT_INFO;
 
 #endif

@@ -28,6 +28,8 @@ typedef struct {
   UINT8  Type;
   UINT8  Flag;
   UINT8  Reserved[6];
+  UINT32 Type2;
+  UINT32 Attribute;
 } MEMORY_MAP_ENTRY;
 
 typedef struct {

@@ -94,7 +94,7 @@ TraverseMemoryResourceHob (
   IN  VOID                  *Param
   )
 {
-  EFI_PEI_HOB_POINTERS    Hob;
+  EFI_PEI_HOB_POINTERS            Hob;
 
   /*
    * Get the HOB list for processing
@@ -106,13 +106,14 @@ TraverseMemoryResourceHob (
    */
   while (!END_OF_HOB_LIST (Hob)) {
     if (Hob.Header->HobType == EFI_HOB_TYPE_RESOURCE_DESCRIPTOR) {
-      if ((Hob.ResourceDescriptor->ResourceType == EFI_RESOURCE_MEMORY_RESERVED) ||
-          (Hob.ResourceDescriptor->ResourceType == EFI_RESOURCE_SYSTEM_MEMORY)) {
+//      if ((Hob.ResourceDescriptor->ResourceType == EFI_RESOURCE_MEMORY_RESERVED) ||
+//          (Hob.ResourceDescriptor->ResourceType == EFI_RESOURCE_SYSTEM_MEMORY)) {
         MemResHobCallback (Hob.ResourceDescriptor, Param);
       }
-    }
+//    }
     Hob.Raw = GET_NEXT_HOB (Hob);
   }
+
 }
 
 /**
