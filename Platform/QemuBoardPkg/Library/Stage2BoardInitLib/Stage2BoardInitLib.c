@@ -337,9 +337,9 @@ UpdateSerialPortInfo (
   IN  SERIAL_PORT_INFO  *SerialPortInfo
 )
 {
-  SerialPortInfo->Type     = 1;
-  SerialPortInfo->BaseAddr = GetSerialPortBase();
-  SerialPortInfo->RegWidth = GetSerialPortStrideSize();
+  SerialPortInfo->UseMmio       = FALSE;
+  SerialPortInfo->RegisterBase  = GetSerialPortBase();
+  SerialPortInfo->RegisterWidth = GetSerialPortStrideSize();
 }
 
 /**
