@@ -95,8 +95,6 @@ class Board(BaseBoard):
         # Let Stage1A verifies Stage1B
         self.VERIFIED_BOOT_STAGE_1B  = 0x1
 
-        self.STAGE1B_XIP          = 0
-
         self.STAGE1A_SIZE         = 0x00010000
         self.STAGE1B_SIZE         = 0x00030000
         self.STAGE2_SIZE          = 0x00018000

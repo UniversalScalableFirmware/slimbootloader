@@ -73,7 +73,8 @@ CallFspMemoryInit (
   if (NewStack == 0xFFFFFFFF) {
     NewStack = FspmUpdCommon->FspmArchUpd.StackBase + FspmUpdCommon->FspmArchUpd.StackSize;
   }
-  if (IS_X64) {
+
+  if (IS_X64 && !(FspHeader->ComponentAttribute & BIT2)) {
     if (NewStack != 0) {
       Status = FspmSwitchStack ((VOID *)(UINTN)FspMemoryInit, (VOID *)FspmUpd, (VOID *)HobList, (VOID *)NewStack);
     } else {

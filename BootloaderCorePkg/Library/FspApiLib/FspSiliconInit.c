@@ -53,14 +53,20 @@ CallFspSiliconInit (
   FspSiliconInit = (FSP_SILICON_INIT)(UINTN)(FspHeader->ImageBase + \
                                              FspHeader->FspSiliconInitEntryOffset);
 
-  DEBUG ((DEBUG_INFO, "Call FspSiliconInit ... \n"));
-  if (IS_X64) {
-    Status = Execute32BitCode ((UINTN)FspSiliconInit,(UINTN) FspsUpdptr, (UINTN)0, FALSE);
+  DEBUG ((DEBUG_INFO, "Call FspSiliconInit "));
+  if (IS_X64 && !(FspHeader->ComponentAttribute & BIT2)) {
+    DEBUG ((DEBUG_INFO, "(x86)"));
+    Status = Execute32BitCode ((UINTN)FspSiliconInit, (UINTN)FspsUpd, (UINTN)0, FALSE);
     Status = (UINTN)LShiftU64 (Status & ((UINTN)MAX_INT32 + 1), 32) | (Status & MAX_INT32);
   } else {
+    if (IS_X64) {
+      DEBUG ((DEBUG_INFO, "(x64)"));
+    } else {
+      DEBUG ((DEBUG_INFO, "(x86)"));
+    }
     Status = FspSiliconInit (FspsUpdptr);
   }
-  DEBUG ((DEBUG_INFO, "%r\n", Status));
+  DEBUG ((DEBUG_INFO, " ... %r\n", Status));
 
   return Status;
 }
