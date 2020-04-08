@@ -1,0 +1,3012 @@
+From 6c123d2e122619e4568511c36e048923792eb584 Mon Sep 17 00:00:00 2001
+From: Maurice Ma <maurice.ma@intel.com>
+Date: Tue, 7 Apr 2020 21:35:58 -0700
+Subject: [PATCH] Enable QEMU x64 FSP build
+
+Signed-off-by: Maurice Ma <maurice.ma@intel.com>
+---
+ BaseTools/Source/Python/AutoGen/GenMake.py    |   2 +-
+ BuildFsp.py                                   |  25 ++-
+ .../FspNotifyPhase/FspNotifyPhasePeim.c       |   1 +
+ IntelFsp2Pkg/FspSecCore/FspSecCoreM.inf       |  10 +-
+ IntelFsp2Pkg/FspSecCore/FspSecCoreS.inf       |   8 +-
+ IntelFsp2Pkg/FspSecCore/FspSecCoreT.inf       |   7 +-
+ .../FspSecCore/Ia32/FspApiEntryCommon.nasm    |  54 +----
+ IntelFsp2Pkg/FspSecCore/Ia32/Stack.nasm       |  72 ------
+ IntelFsp2Pkg/FspSecCore/SecFsp.c              |  10 +-
+ IntelFsp2Pkg/FspSecCore/SecFsp.h              |   8 +-
+ IntelFsp2Pkg/FspSecCore/SecFspApiChk.c        |   8 +-
+ IntelFsp2Pkg/FspSecCore/SecMain.c             |  53 +++--
+ IntelFsp2Pkg/FspSecCore/SecMain.h             |  10 +-
+ .../FspSecCore/X64/FspApiEntryCommon.nasm     | 119 ++++++++++
+ IntelFsp2Pkg/FspSecCore/X64/FspApiEntryM.nasm | 208 ++++++++++++++++++
+ IntelFsp2Pkg/FspSecCore/X64/FspApiEntryS.nasm |  58 +++++
+ IntelFsp2Pkg/FspSecCore/X64/FspHelper.nasm    |  35 +++
+ .../FspSecCore/X64/InitializeFpu.nasm         |  74 +++++++
+ .../FspSecCore/X64/MicrocodeLoadNasm.inc      |  10 +
+ IntelFsp2Pkg/FspSecCore/X64/ReadEsp.nasm      |  22 ++
+ .../FspSecCore/X64/SaveRestoreSseNasm.inc     | 177 +++++++++++++++
+ IntelFsp2Pkg/Include/FspEas/FspApi.h          |   4 +-
+ IntelFsp2Pkg/Include/FspGlobalData.h          |   4 +-
+ IntelFsp2Pkg/Include/Library/FspCommonLib.h   |   8 +-
+ .../Library/BaseCacheLib/BaseCacheLib.inf     |   2 +-
+ IntelFsp2Pkg/Library/BaseCacheLib/CacheLib.c  |   4 +-
+ .../Library/BaseFspCommonLib/FspCommonLib.c   |  64 +++---
+ .../BaseFspDebugLibSerialPort.inf             |   3 +
+ .../X64/FspDebug.nasm                         |  25 +++
+ .../BaseFspSwitchStackLib.inf                 |   5 +-
+ .../BaseFspSwitchStackLib/FspSwitchStackLib.c |   7 +-
+ .../BaseFspSwitchStackLib/X64/Stack.nasm      | 145 ++++++++++++
+ .../SecFspSecPlatformLibNull.inf              |   4 +
+ .../SecFspSecPlatformLibNull/X64/Flat32.nasm  | 121 ++++++++++
+ .../X64/SecCarInit.nasm                       |  40 ++++
+ IntelFsp2Pkg/Tools/PatchFv.py                 |  14 +-
+ QemuFspPkg/FspmInit/FspmInit.c                |   6 +-
+ QemuFspPkg/FspmInit/FspmInit.inf              |   2 +
+ QemuFspPkg/FspsInit/FspsInit.c                |   4 +-
+ .../PlatformSecLib/Vtf0PlatformSecTLib.inf    |   3 +
+ .../Library/PlatformSecLib/X64/Chipset.inc    | 119 ++++++++++
+ .../Library/PlatformSecLib/X64/Ia32Nasm.inc   | 169 ++++++++++++++
+ .../PlatformSecLib/X64/PlatformNasm.inc       | 143 ++++++++++++
+ .../PlatformSecLib/X64/SecCoreNasm.inc        |  61 +++++
+ .../Library/PlatformSecLib/X64/SecEntry.nasm  |  41 ++++
+ QemuFspPkg/QemuFspPkg.dsc                     |  13 +-
+ QemuFspPkg/QemuFspPkg.fdf                     |  39 ++--
+ QemuFspPkg/QemuVideo/QemuVideo.c              |   8 +-
+ 48 files changed, 1754 insertions(+), 275 deletions(-)
+ delete mode 100644 IntelFsp2Pkg/FspSecCore/Ia32/Stack.nasm
+ create mode 100644 IntelFsp2Pkg/FspSecCore/X64/FspApiEntryCommon.nasm
+ create mode 100644 IntelFsp2Pkg/FspSecCore/X64/FspApiEntryM.nasm
+ create mode 100644 IntelFsp2Pkg/FspSecCore/X64/FspApiEntryS.nasm
+ create mode 100644 IntelFsp2Pkg/FspSecCore/X64/FspHelper.nasm
+ create mode 100644 IntelFsp2Pkg/FspSecCore/X64/InitializeFpu.nasm
+ create mode 100644 IntelFsp2Pkg/FspSecCore/X64/MicrocodeLoadNasm.inc
+ create mode 100644 IntelFsp2Pkg/FspSecCore/X64/ReadEsp.nasm
+ create mode 100644 IntelFsp2Pkg/FspSecCore/X64/SaveRestoreSseNasm.inc
+ create mode 100644 IntelFsp2Pkg/Library/BaseFspDebugLibSerialPort/X64/FspDebug.nasm
+ create mode 100644 IntelFsp2Pkg/Library/BaseFspSwitchStackLib/X64/Stack.nasm
+ create mode 100644 IntelFsp2Pkg/Library/SecFspSecPlatformLibNull/X64/Flat32.nasm
+ create mode 100644 IntelFsp2Pkg/Library/SecFspSecPlatformLibNull/X64/SecCarInit.nasm
+ create mode 100644 QemuFspPkg/Library/PlatformSecLib/X64/Chipset.inc
+ create mode 100644 QemuFspPkg/Library/PlatformSecLib/X64/Ia32Nasm.inc
+ create mode 100644 QemuFspPkg/Library/PlatformSecLib/X64/PlatformNasm.inc
+ create mode 100644 QemuFspPkg/Library/PlatformSecLib/X64/SecCoreNasm.inc
+ create mode 100644 QemuFspPkg/Library/PlatformSecLib/X64/SecEntry.nasm
+
+diff --git a/BaseTools/Source/Python/AutoGen/GenMake.py b/BaseTools/Source/Python/AutoGen/GenMake.py
+index 59a01a7f24..1b42106bc2 100755
+--- a/BaseTools/Source/Python/AutoGen/GenMake.py
++++ b/BaseTools/Source/Python/AutoGen/GenMake.py
+@@ -714,7 +714,7 @@ cleanlib:
+                     if Dst not in self.ResultFileList:
+                         self.ResultFileList.append(Dst)
+                     if '%s :' %(Dst) not in self.BuildTargetList:
+-                        self.BuildTargetList.append("%s :" %(Dst))
++                        self.BuildTargetList.append("%s : %s" %(Dst, Src))
+                         self.BuildTargetList.append('\t' + self._CP_TEMPLATE_[self._FileType] %{'Src': Src, 'Dst': Dst})
+ 
+             FfsCmdList = Cmd[0]
+diff --git a/BuildFsp.py b/BuildFsp.py
+index dd3f3ccb6e..963266aede 100644
+--- a/BuildFsp.py
++++ b/BuildFsp.py
+@@ -110,7 +110,6 @@ def get_visual_studio_info ():
+                     if part.startswith(vs_node):
+                         toolchain_ver = part[len(vs_node):]
+                 break
+-
+     return (toolchain, toolchain_prefix, toolchain_path, toolchain_ver)
+ 
+ 
+@@ -227,11 +226,14 @@ def Prebuild(target, toolchain):
+               os.path.join(workspace, 'BaseTools/Conf/%s.template' % name),
+               os.path.join(workspace, 'Conf/%s.txt' % name))
+ 
+-    cmd = '%s -p QemuFspPkg/QemuFspPkg.dsc -m QemuFspPkg/FspHeader/FspHeader.inf -a IA32 -b %s -t %s -DCFG_PREBUILD' % (
+-        'build' if os.name == 'posix' else 'build.bat', target, toolchain)
+-    ret = subprocess.call(cmd.split(' '))
+-    if ret:
+-        Fatal('Failed to prebuild QEMU FSP !')
++    #
++    # Not needed any more since EDKII already supported to list non-existing file in FDF
++    #
++    # cmd = '%s -p QemuFspPkg/QemuFspPkg.dsc -m QemuFspPkg/FspHeader/FspHeader.inf -a IA32 -b %s -t %s -DCFG_PREBUILD' % (
++    #     'build' if os.name == 'posix' else 'build.bat', target, toolchain)
++    # ret = subprocess.call(cmd.split(' '))
++    # if ret:
++    #     Fatal('Failed to prebuild QEMU FSP !')
+ 
+     FspGuid = {
+         'FspTUpdGuid'       : '34686CA3-34F9-4901-B82A-BA630F0714C6',
+@@ -286,8 +288,9 @@ def Prebuild(target, toolchain):
+ 
+ 
+ def Build (target, toolchain):
+-    cmd = '%s -p QemuFspPkg/QemuFspPkg.dsc -a IA32 -b %s -t %s -y Report%s.log' % (
++    cmd = '%s -p QemuFspPkg/QemuFspPkg.dsc -a IA32 -a X64 -b %s -t %s -y Report%s.log' % (
+         'build' if os.name == 'posix' else 'build.bat', target, toolchain, target)
++
+     ret = subprocess.call(cmd.split(' '))
+     if ret:
+         Fatal('Failed to do Build QEMU FSP!')
+@@ -301,13 +304,13 @@ def PostBuild (target, toolchain):
+ 
+     patchfv = 'IntelFsp2Pkg/Tools/PatchFv.py'
+     fvdir   = 'Build/QemuFspPkg/%s_%s/FV' % (target, toolchain)
+-
++    build_type = 1 if target == 'RELEASE' else 0
+     cmd1 = [
+            "0x0000,            _BASE_FSP-T_,                                                                                       @Temporary Base",
+            "<[0x0000]>+0x00AC, [<[0x0000]>+0x0020],                                                                                @FSP-T Size",
+            "<[0x0000]>+0x00B0, [0x0000],                                                                                           @FSP-T Base",
+            "<[0x0000]>+0x00B4, ([<[0x0000]>+0x00B4] & 0xFFFFFFFF) | 0x0001,                                                        @FSP-T Image Attribute",
+-           "<[0x0000]>+0x00B6, ([<[0x0000]>+0x00B6] & 0xFFFF0FFC) | 0x1000 | 0x0001 | 0x0002,                                      @FSP-T Component Attribute",
++           "<[0x0000]>+0x00B6, ([<[0x0000]>+0x00B6] & 0xFFFF0FF8) | 0x1000 | 0x000%d | 0x0002,                                     @FSP-T Component Attribute" % build_type,
+            "<[0x0000]>+0x00B8, 70BCF6A5-FFB1-47D8-B1AE-EFE5508E23EA:0x1C - <[0x0000]>,                                             @FSP-T CFG Offset",
+            "<[0x0000]>+0x00BC, [70BCF6A5-FFB1-47D8-B1AE-EFE5508E23EA:0x14] & 0xFFFFFF - 0x001C,                                    @FSP-T CFG Size",
+            "<[0x0000]>+0x00C4, FspSecCoreT:_TempRamInitApi - [0x0000],                                                             @TempRamInit API",
+@@ -320,7 +323,7 @@ def PostBuild (target, toolchain):
+          "<[0x0000]>+0x00AC, [<[0x0000]>+0x0020],                                                                                @FSP-M Size",
+          "<[0x0000]>+0x00B0, [0x0000],                                                                                           @FSP-M Base",
+          "<[0x0000]>+0x00B4, ([<[0x0000]>+0x00B4] & 0xFFFFFFFF) | 0x0001,                                                        @FSP-M Image Attribute",
+-         "<[0x0000]>+0x00B6, ([<[0x0000]>+0x00B6] & 0xFFFF0FFC) | 0x2000 | 0x0001 | 0x0002,                                      @FSP-M Component Attribute",
++         "<[0x0000]>+0x00B6, ([<[0x0000]>+0x00B6] & 0xFFFF0FF8) | 0x2000 | 0x000%d | 0x0002 | 0x0004,                            @FSP-M Component Attribute"  % build_type,
+          "<[0x0000]>+0x00B8, D5B86AEA-6AF7-40D4-8014-982301BC3D89:0x1C - <[0x0000]>,                                             @FSP-M CFG Offset",
+          "<[0x0000]>+0x00BC, [D5B86AEA-6AF7-40D4-8014-982301BC3D89:0x14] & 0xFFFFFF - 0x001C,                                    @FSP-M CFG Size",
+          "<[0x0000]>+0x00D0, FspSecCoreM:_FspMemoryInitApi - [0x0000],                                                           @MemoryInitApi API",
+@@ -335,7 +338,7 @@ def PostBuild (target, toolchain):
+          "<[0x0000]>+0x00AC, [<[0x0000]>+0x0020],                                                                                @FSP-S Size",
+          "<[0x0000]>+0x00B0, [0x0000],                                                                                           @FSP-S Base",
+          "<[0x0000]>+0x00B4, ([<[0x0000]>+0x00B4] & 0xFFFFFFFF) | 0x0001,                                                        @FSP-S Image Attribute",
+-         "<[0x0000]>+0x00B6, ([<[0x0000]>+0x00B6] & 0xFFFF0FFC) | 0x3000 | 0x0001 | 0x0002                      ,                @FSP-S Component Attribute",
++         "<[0x0000]>+0x00B6, ([<[0x0000]>+0x00B6] & 0xFFFF0FF8) | 0x3000 | 0x000%d | 0x0002 | 0x0004,                            @FSP-S Component Attribute"  % build_type,
+          "<[0x0000]>+0x00B8, E3CD9B18-998C-4F76-B65E-98B154E5446F:0x1C - <[0x0000]>,                                             @FSP-S CFG Offset",
+          "<[0x0000]>+0x00BC, [E3CD9B18-998C-4F76-B65E-98B154E5446F:0x14] & 0xFFFFFF - 0x001C,                                    @FSP-S CFG Size",
+          "<[0x0000]>+0x00D8, FspSecCoreS:_FspSiliconInitApi - [0x0000],                                                          @SiliconInit API",
+diff --git a/IntelFsp2Pkg/FspNotifyPhase/FspNotifyPhasePeim.c b/IntelFsp2Pkg/FspNotifyPhase/FspNotifyPhasePeim.c
+index 4803008012..fffe37c0e0 100644
+--- a/IntelFsp2Pkg/FspNotifyPhase/FspNotifyPhasePeim.c
++++ b/IntelFsp2Pkg/FspNotifyPhase/FspNotifyPhasePeim.c
+@@ -112,6 +112,7 @@ WaitForNotify (
+   @retval     EFI_OUT_OF_RESOURCES Insufficient resources to create database
+ **/
+ EFI_STATUS
++EFIAPI
+ FspNotifyPhasePeimEntryPoint (
+   IN       EFI_PEI_FILE_HANDLE    FileHandle,
+   IN CONST EFI_PEI_SERVICES       **PeiServices
+diff --git a/IntelFsp2Pkg/FspSecCore/FspSecCoreM.inf b/IntelFsp2Pkg/FspSecCore/FspSecCoreM.inf
+index 25f2a109ab..1db1c955e0 100644
+--- a/IntelFsp2Pkg/FspSecCore/FspSecCoreM.inf
++++ b/IntelFsp2Pkg/FspSecCore/FspSecCoreM.inf
+@@ -27,8 +27,16 @@
+   SecFsp.h
+   SecFspApiChk.c
+ 
++[Sources.X64]
++  #X64/Stack.nasm
++  X64/InitializeFpu.nasm
++  X64/FspApiEntryM.nasm
++  X64/FspApiEntryCommon.nasm
++  X64/FspHelper.nasm
++  X64/ReadEsp.nasm
++
+ [Sources.IA32]
+-  Ia32/Stack.nasm
++  #Ia32/Stack.nasm
+   Ia32/InitializeFpu.nasm
+   Ia32/FspApiEntryM.nasm
+   Ia32/FspApiEntryCommon.nasm
+diff --git a/IntelFsp2Pkg/FspSecCore/FspSecCoreS.inf b/IntelFsp2Pkg/FspSecCore/FspSecCoreS.inf
+index 1d9c2554d1..4d61be8ef9 100644
+--- a/IntelFsp2Pkg/FspSecCore/FspSecCoreS.inf
++++ b/IntelFsp2Pkg/FspSecCore/FspSecCoreS.inf
+@@ -24,8 +24,14 @@
+   SecFspApiChk.c
+   SecFsp.h
+ 
++[Sources.X64]
++  #X64/Stack.nasm
++  X64/FspApiEntryS.nasm
++  X64/FspApiEntryCommon.nasm
++  X64/FspHelper.nasm
++
+ [Sources.IA32]
+-  Ia32/Stack.nasm
++  #Ia32/Stack.nasm
+   Ia32/FspApiEntryS.nasm
+   Ia32/FspApiEntryCommon.nasm
+   Ia32/FspHelper.nasm
+diff --git a/IntelFsp2Pkg/FspSecCore/FspSecCoreT.inf b/IntelFsp2Pkg/FspSecCore/FspSecCoreT.inf
+index 971b311e42..da81a65122 100644
+--- a/IntelFsp2Pkg/FspSecCore/FspSecCoreT.inf
++++ b/IntelFsp2Pkg/FspSecCore/FspSecCoreT.inf
+@@ -24,7 +24,6 @@
+ 
+ 
+ [Sources.IA32]
+-  Ia32/Stack.nasm
+   Ia32/InitializeFpu.nasm
+   Ia32/FspApiEntryT.nasm
+   Ia32/FspHelper.nasm
+@@ -37,14 +36,16 @@
+   IntelFsp2Pkg/IntelFsp2Pkg.dec
+ 
+ [LibraryClasses]
+-  BaseMemoryLib
+   DebugLib
++  FspSecPlatformLib
++
++[LibraryClasses.IA32]
++  BaseMemoryLib
+   BaseLib
+   PciCf8Lib
+   SerialPortLib
+   FspSwitchStackLib
+   FspCommonLib
+-  FspSecPlatformLib
+ 
+ [Pcd]
+   gIntelFsp2PkgTokenSpaceGuid.PcdTemporaryRamBase              ## CONSUMES
+diff --git a/IntelFsp2Pkg/FspSecCore/Ia32/FspApiEntryCommon.nasm b/IntelFsp2Pkg/FspSecCore/Ia32/FspApiEntryCommon.nasm
+index bb4451b145..2e29abc6cb 100644
+--- a/IntelFsp2Pkg/FspSecCore/Ia32/FspApiEntryCommon.nasm
++++ b/IntelFsp2Pkg/FspSecCore/Ia32/FspApiEntryCommon.nasm
+@@ -7,18 +7,6 @@
+ 
+     SECTION .text
+ 
+-;
+-; Following functions will be provided in C
+-;
+-extern ASM_PFX(Loader2PeiSwitchStack)
+-extern ASM_PFX(FspApiCallingCheck)
+-
+-;
+-; Following functions will be provided in ASM
+-;
+-extern ASM_PFX(FspApiCommonContinue)
+-extern ASM_PFX(AsmGetFspInfoHeader)
+-
+ ;----------------------------------------------------------------------------
+ ; FspApiCommon API
+ ;
+@@ -27,44 +15,4 @@ extern ASM_PFX(AsmGetFspInfoHeader)
+ ;----------------------------------------------------------------------------
+ global ASM_PFX(FspApiCommon)
+ ASM_PFX(FspApiCommon):
+-  ;
+-  ; EAX holds the API index
+-  ;
+-
+-  ;
+-  ; Stack must be ready
+-  ;
+-  push   eax
+-  add    esp, 4
+-  cmp    eax, dword  [esp - 4]
+-  jz     FspApiCommon1
+-  mov    eax, 080000003h
+-  jmp    exit
+-
+-FspApiCommon1:
+-  ;
+-  ; Verify the calling condition
+-  ;
+-  pushad
+-  push   DWORD [esp + (4 * 8 + 4)]  ; push ApiParam
+-  push   eax                ; push ApiIdx
+-  call   ASM_PFX(FspApiCallingCheck)
+-  add    esp, 8
+-  cmp    eax, 0
+-  jz     FspApiCommon2
+-  mov    dword  [esp + (4 * 7)], eax
+-  popad
+-exit:
+-  ret
+-
+-FspApiCommon2:
+-  popad
+-  cmp    eax, 3   ; FspMemoryInit API
+-  jz     FspApiCommon3
+-
+-  call   ASM_PFX(AsmGetFspInfoHeader)
+-  jmp    ASM_PFX(Loader2PeiSwitchStack)
+-
+-FspApiCommon3:
+-  jmp    ASM_PFX(FspApiCommonContinue)
+-
++  jmp $
+diff --git a/IntelFsp2Pkg/FspSecCore/Ia32/Stack.nasm b/IntelFsp2Pkg/FspSecCore/Ia32/Stack.nasm
+deleted file mode 100644
+index 5a7e27c240..0000000000
+--- a/IntelFsp2Pkg/FspSecCore/Ia32/Stack.nasm
++++ /dev/null
+@@ -1,72 +0,0 @@
+-;------------------------------------------------------------------------------
+-;
+-; Copyright (c) 2015 - 2019, Intel Corporation. All rights reserved.<BR>
+-; SPDX-License-Identifier: BSD-2-Clause-Patent
+-;
+-; Abstract:
+-;
+-;   Switch the stack from temporary memory to permanent memory.
+-;
+-;------------------------------------------------------------------------------
+-
+-SECTION .text
+-
+-;------------------------------------------------------------------------------
+-; VOID
+-; EFIAPI
+-; SecSwitchStack (
+-;   UINT32   TemporaryMemoryBase,
+-;   UINT32   PermenentMemoryBase
+-;   );
+-;------------------------------------------------------------------------------
+-global ASM_PFX(SecSwitchStack)
+-ASM_PFX(SecSwitchStack):
+-    ;
+-    ; Save three register: eax, ebx, ecx
+-    ;
+-    push  eax
+-    push  ebx
+-    push  ecx
+-    push  edx
+-
+-    ;
+-    ; !!CAUTION!! this function address's is pushed into stack after
+-    ; migration of whole temporary memory, so need save it to permanent
+-    ; memory at first!
+-    ;
+-
+-    mov   ebx, [esp + 20]          ; Save the first parameter
+-    mov   ecx, [esp + 24]          ; Save the second parameter
+-
+-    ;
+-    ; Save this function's return address into permanent memory at first.
+-    ; Then, Fixup the esp point to permanent memory
+-    ;
+-    mov   eax, esp
+-    sub   eax, ebx
+-    add   eax, ecx
+-    mov   edx, dword [esp]         ; copy pushed register's value to permanent memory
+-    mov   dword [eax], edx
+-    mov   edx, dword [esp + 4]
+-    mov   dword [eax + 4], edx
+-    mov   edx, dword [esp + 8]
+-    mov   dword [eax + 8], edx
+-    mov   edx, dword [esp + 12]
+-    mov   dword [eax + 12], edx
+-    mov   edx, dword [esp + 16]    ; Update this function's return address into permanent memory
+-    mov   dword [eax + 16], edx
+-    mov   esp, eax                     ; From now, esp is pointed to permanent memory
+-
+-    ;
+-    ; Fixup the ebp point to permanent memory
+-    ;
+-    mov   eax, ebp
+-    sub   eax, ebx
+-    add   eax, ecx
+-    mov   ebp, eax                ; From now, ebp is pointed to permanent memory
+-
+-    pop   edx
+-    pop   ecx
+-    pop   ebx
+-    pop   eax
+-    ret
+diff --git a/IntelFsp2Pkg/FspSecCore/SecFsp.c b/IntelFsp2Pkg/FspSecCore/SecFsp.c
+index 446d1730e9..b671504061 100644
+--- a/IntelFsp2Pkg/FspSecCore/SecFsp.c
++++ b/IntelFsp2Pkg/FspSecCore/SecFsp.c
+@@ -115,7 +115,7 @@ SecGetPlatformData (
+ VOID
+ FspGlobalDataInit (
+   IN OUT  FSP_GLOBAL_DATA    *PeiFspData,
+-  IN UINT32                   BootLoaderStack,
++  IN UINTN                    BootLoaderStack,
+   IN UINT8                    ApiIdx
+   )
+ {
+@@ -131,7 +131,7 @@ FspGlobalDataInit (
+ 
+   PeiFspData->Signature            = FSP_GLOBAL_DATA_SIGNATURE;
+   PeiFspData->Version              = 0;
+-  PeiFspData->CoreStack            = BootLoaderStack;
++  PeiFspData->CoreStack            = (UINTN *)BootLoaderStack;
+   PeiFspData->PerfIdx              = 2;
+   PeiFspData->PerfSig              = FSP_PERFORMANCE_DATA_SIGNATURE;
+ 
+@@ -154,7 +154,7 @@ FspGlobalDataInit (
+   //
+   FspmUpdDataPtr = (VOID *) GetFspApiParameter ();
+   if (FspmUpdDataPtr == NULL) {
+-    FspmUpdDataPtr = (VOID *)(PeiFspData->FspInfoHeader->ImageBase + PeiFspData->FspInfoHeader->CfgRegionOffset);
++    FspmUpdDataPtr = (VOID *)(UINTN)(PeiFspData->FspInfoHeader->ImageBase + PeiFspData->FspInfoHeader->CfgRegionOffset);
+   }
+   SetFspUpdDataPointer (FspmUpdDataPtr);
+   SetFspMemoryInitUpdDataPointer (FspmUpdDataPtr);
+@@ -198,11 +198,11 @@ FspGlobalDataInit (
+ **/
+ VOID
+ FspDataPointerFixUp (
+-  IN UINT32   OffsetGap
++  IN UINTN   OffsetGap
+   )
+ {
+   FSP_GLOBAL_DATA  *NewFspData;
+ 
+-  NewFspData = (FSP_GLOBAL_DATA *)((UINTN)GetFspGlobalDataPointer() + (UINTN)OffsetGap);
++  NewFspData = (FSP_GLOBAL_DATA *)((UINTN)GetFspGlobalDataPointer() + OffsetGap);
+   SetFspGlobalDataPointer (NewFspData);
+ }
+diff --git a/IntelFsp2Pkg/FspSecCore/SecFsp.h b/IntelFsp2Pkg/FspSecCore/SecFsp.h
+index 75f3ef463c..6a6643e13e 100644
+--- a/IntelFsp2Pkg/FspSecCore/SecFsp.h
++++ b/IntelFsp2Pkg/FspSecCore/SecFsp.h
+@@ -48,7 +48,7 @@ FspGetExceptionHandler(
+ VOID
+ FspGlobalDataInit (
+   IN OUT  FSP_GLOBAL_DATA    *PeiFspData,
+-  IN UINT32                   BootLoaderStack,
++  IN UINTN                    BootLoaderStack,
+   IN UINT8                    ApiIdx
+   );
+ 
+@@ -62,7 +62,7 @@ FspGlobalDataInit (
+ **/
+ VOID
+ FspDataPointerFixUp (
+-  IN UINT32   OffsetGap
++  IN UINTN   OffsetGap
+   );
+ 
+ 
+@@ -72,7 +72,7 @@ FspDataPointerFixUp (
+   @return   FSP binary base address.
+ 
+ **/
+-UINT32
++UINTN
+ EFIAPI
+ AsmGetFspBaseAddress (
+   VOID
+@@ -84,7 +84,7 @@ AsmGetFspBaseAddress (
+   @return   FSP binary base address.
+ 
+ **/
+-UINT32
++UINTN
+ EFIAPI
+ AsmGetFspInfoHeader (
+   VOID
+diff --git a/IntelFsp2Pkg/FspSecCore/SecFspApiChk.c b/IntelFsp2Pkg/FspSecCore/SecFspApiChk.c
+index 8e0595fe9a..1a2dafe485 100644
+--- a/IntelFsp2Pkg/FspSecCore/SecFspApiChk.c
++++ b/IntelFsp2Pkg/FspSecCore/SecFspApiChk.c
+@@ -32,7 +32,7 @@ FspApiCallingCheck (
+     //
+     // NotifyPhase check
+     //
+-    if ((FspData == NULL) || ((UINT32)FspData == 0xFFFFFFFF)) {
++    if ((FspData == NULL) || ((UINT32)(UINTN)FspData == 0xFFFFFFFF)) {
+       Status = EFI_UNSUPPORTED;
+     } else {
+       if (FspData->Signature != FSP_GLOBAL_DATA_SIGNATURE) {
+@@ -43,7 +43,7 @@ FspApiCallingCheck (
+     //
+     // FspMemoryInit check
+     //
+-    if ((UINT32)FspData != 0xFFFFFFFF) {
++    if ((UINT32)(UINTN)FspData != 0xFFFFFFFF) {
+       Status = EFI_UNSUPPORTED;
+     } else if (EFI_ERROR (FspUpdSignatureCheck (ApiIdx, ApiParam))) {
+       Status = EFI_INVALID_PARAMETER;
+@@ -52,7 +52,7 @@ FspApiCallingCheck (
+     //
+     // TempRamExit check
+     //
+-    if ((FspData == NULL) || ((UINT32)FspData == 0xFFFFFFFF)) {
++    if ((FspData == NULL) || ((UINT32)(UINTN)FspData == 0xFFFFFFFF)) {
+       Status = EFI_UNSUPPORTED;
+     } else {
+       if (FspData->Signature != FSP_GLOBAL_DATA_SIGNATURE) {
+@@ -63,7 +63,7 @@ FspApiCallingCheck (
+     //
+     // FspSiliconInit check
+     //
+-    if ((FspData == NULL) || ((UINT32)FspData == 0xFFFFFFFF)) {
++    if ((FspData == NULL) || ((UINT32)(UINTN)FspData == 0xFFFFFFFF)) {
+       Status = EFI_UNSUPPORTED;
+     } else {
+       if (FspData->Signature != FSP_GLOBAL_DATA_SIGNATURE) {
+diff --git a/IntelFsp2Pkg/FspSecCore/SecMain.c b/IntelFsp2Pkg/FspSecCore/SecMain.c
+index 7169afc6c7..1b6df2ceed 100644
+--- a/IntelFsp2Pkg/FspSecCore/SecMain.c
++++ b/IntelFsp2Pkg/FspSecCore/SecMain.c
+@@ -53,7 +53,7 @@ SecStartup (
+   IN UINT32                   SizeOfRam,
+   IN UINT32                   TempRamBase,
+   IN VOID                    *BootFirmwareVolume,
+-  IN PEI_CORE_ENTRY           PeiCore,
++  IN EFI_PEI_CORE_ENTRY_POINT PeiCore,
+   IN UINT32                   BootLoaderStack,
+   IN UINT32                   ApiIdx
+   )
+@@ -119,7 +119,7 @@ SecStartup (
+   if (IdtDescriptor.Base == 0) {
+     ExceptionHandler = FspGetExceptionHandler(mIdtEntryTemplate);
+     for (Index = 0; Index < FixedPcdGet8(PcdFspMaxInterruptSupported); Index ++) {
+-      CopyMem ((VOID*)&IdtTableInStack.IdtTable[Index], (VOID*)&ExceptionHandler, sizeof (UINT64));
++      CopyMem ((VOID*)&IdtTableInStack.IdtTable[Index], (VOID*)&ExceptionHandler, sizeof (IA32_IDT_GATE_DESCRIPTOR));
+     }
+     IdtSize = sizeof (IdtTableInStack.IdtTable);
+   } else {
+@@ -128,10 +128,10 @@ SecStartup (
+       //
+       // ERROR: IDT table size from boot loader is larger than FSP can support, DeadLoop here!
+       //
+-      CpuDeadLoop();
+-    } else {
+-      CopyMem ((VOID *) (UINTN) &IdtTableInStack.IdtTable, (VOID *) IdtDescriptor.Base, IdtSize);
++      IdtSize = sizeof (IdtTableInStack.IdtTable);
+     }
++
++    CopyMem ((VOID *) (UINTN) &IdtTableInStack.IdtTable, (VOID *) IdtDescriptor.Base, IdtSize);
+   }
+   IdtDescriptor.Base  = (UINTN) &IdtTableInStack.IdtTable;
+   IdtDescriptor.Limit = (UINT16)(IdtSize - 1);
+@@ -173,6 +173,7 @@ SecStartup (
+   DEBUG ((DEBUG_INFO, "Fsp PeiTemporaryRamSize    - 0x%x\n", SecCoreData.PeiTemporaryRamSize));
+   DEBUG ((DEBUG_INFO, "Fsp StackBase              - 0x%x\n", SecCoreData.StackBase));
+   DEBUG ((DEBUG_INFO, "Fsp StackSize              - 0x%x\n", SecCoreData.StackSize));
++  DEBUG ((DEBUG_INFO, "SecData                    - 0x%x\n", (UINT32)(UINTN)(&SecCoreData)));
+ 
+   //
+   // Call PeiCore Entry
+@@ -210,16 +211,17 @@ SecTemporaryRamSupport (
+   IN UINTN                    CopySize
+   )
+ {
+-  IA32_DESCRIPTOR   IdtDescriptor;
+-  VOID*             OldHeap;
+-  VOID*             NewHeap;
+-  VOID*             OldStack;
+-  VOID*             NewStack;
+-  UINTN             HeapSize;
+-  UINTN             StackSize;
+-
+-  UINTN             CurrentStack;
+-  UINTN             FspStackBase;
++  IA32_DESCRIPTOR           IdtDescriptor;
++  VOID*                     OldHeap;
++  VOID*                     NewHeap;
++  VOID*                     OldStack;
++  VOID*                     NewStack;
++  UINTN                     HeapSize;
++  UINTN                     StackSize;
++  UINTN                     StackAdj;
++  UINTN                     CurrentStack;
++  UINTN                     FspStackBase;
++  BASE_LIBRARY_JUMP_BUFFER  JumpBuffer;
+ 
+   if (PcdGet8 (PcdFspHeapSizePercentage) == 0) {
+ 
+@@ -279,14 +281,21 @@ SecTemporaryRamSupport (
+   FspDataPointerFixUp ((UINTN)NewStack - (UINTN)OldStack);
+ 
+   //
+-  // SecSwitchStack function must be invoked after the memory migration
+-  // immediately, also we need fixup the stack change caused by new call into
+-  // permanent memory.
++  // Use SetJump()/LongJump() to switch to a new stack.
+   //
+-  SecSwitchStack (
+-    (UINT32) (UINTN) OldStack,
+-    (UINT32) (UINTN) NewStack
+-    );
++  StackAdj = (UINT8 *)NewStack - (UINT8 *)OldStack;
++  if (SetJump (&JumpBuffer) == 0) {
++#if defined (MDE_CPU_IA32)
++    JumpBuffer.Esp = JumpBuffer.Esp + StackAdj;
++    JumpBuffer.Ebp = JumpBuffer.Ebp + StackAdj;
++#endif
++#if defined (MDE_CPU_X64)
++    JumpBuffer.Rsp = JumpBuffer.Rsp + StackAdj;
++    JumpBuffer.Rbp = JumpBuffer.Rbp + StackAdj;
++#endif
++    LongJump (&JumpBuffer, (UINTN)-1);
++  }
++
+ 
+   return EFI_SUCCESS;
+ }
+diff --git a/IntelFsp2Pkg/FspSecCore/SecMain.h b/IntelFsp2Pkg/FspSecCore/SecMain.h
+index af7f387960..98bcfec755 100644
+--- a/IntelFsp2Pkg/FspSecCore/SecMain.h
++++ b/IntelFsp2Pkg/FspSecCore/SecMain.h
+@@ -23,10 +23,6 @@
+ #include <Library/FspCommonLib.h>
+ #include <FspEas.h>
+ 
+-typedef VOID (*PEI_CORE_ENTRY) ( \
+-  IN CONST  EFI_SEC_PEI_HAND_OFF    *SecCoreData, \
+-  IN CONST  EFI_PEI_PPI_DESCRIPTOR  *PpiList \
+-);
+ 
+ typedef struct _SEC_IDT_TABLE {
+   //
+@@ -35,8 +31,8 @@ typedef struct _SEC_IDT_TABLE {
+   // Note: For IA32, only the 4 bytes immediately preceding IDT is used to store
+   // EFI_PEI_SERVICES**
+   //
+-  UINT64            PeiService;
+-  UINT64            IdtTable[FixedPcdGet8 (PcdFspMaxInterruptSupported)];
++  UINT64                    PeiService;
++  IA32_IDT_GATE_DESCRIPTOR  IdtTable[FixedPcdGet8 (PcdFspMaxInterruptSupported)];
+ } SEC_IDT_TABLE;
+ 
+ /**
+@@ -118,7 +114,7 @@ SecStartup (
+   IN UINT32                   SizeOfRam,
+   IN UINT32                   TempRamBase,
+   IN VOID                    *BootFirmwareVolume,
+-  IN PEI_CORE_ENTRY           PeiCore,
++  IN EFI_PEI_CORE_ENTRY_POINT PeiCore,
+   IN UINT32                   BootLoaderStack,
+   IN UINT32                   ApiIdx
+   );
+diff --git a/IntelFsp2Pkg/FspSecCore/X64/FspApiEntryCommon.nasm b/IntelFsp2Pkg/FspSecCore/X64/FspApiEntryCommon.nasm
+new file mode 100644
+index 0000000000..2e7138cc2c
+--- /dev/null
++++ b/IntelFsp2Pkg/FspSecCore/X64/FspApiEntryCommon.nasm
+@@ -0,0 +1,119 @@
++;; @file
++;  Provide FSP API entry points.
++;
++; Copyright (c) 2016, Intel Corporation. All rights reserved.<BR>
++; SPDX-License-Identifier: BSD-2-Clause-Patent
++;;
++
++    SECTION .text
++
++STACK_FSP_INFO_HDR_OFFSET    EQU   3 * 8
++STACK_SAVED_RAX_OFFSET       EQU   4 * 8
++
++;
++; Define SSE macros using SSE 4.1 instructions
++; args 1:XMM, 2:IDX, 3:REG
++%macro PUSHAD  0
++       push    0    ; Idt
++       push    0
++       sidt    [rsp]
++
++       sub     rsp, 0x10 * 10
++       movdqu  [rsp + 0x00], xmm6
++       movdqu  [rsp + 0x10], xmm7
++       movdqu  [rsp + 0x20], xmm8
++       movdqu  [rsp + 0x30], xmm9
++       movdqu  [rsp + 0x40], xmm10
++       movdqu  [rsp + 0x50], xmm11
++       movdqu  [rsp + 0x60], xmm12
++       movdqu  [rsp + 0x70], xmm13
++       movdqu  [rsp + 0x80], xmm14
++       movdqu  [rsp + 0x90], xmm15
++
++       push    r15
++       push    r14
++       push    r13
++       push    r12
++       push    r11
++       push    r10
++       push    r9
++       push    r8
++
++       pushfq
++       push    rbp
++       push    rdi
++       push    rsi
++       push    rdx
++       push    rcx
++       push    rbx
++       push    rax
++
++       %endmacro
++
++;
++; Following functions will be provided in C
++;
++extern ASM_PFX(Loader2PeiSwitchStack)
++extern ASM_PFX(FspApiCallingCheck)
++
++;
++; Following functions will be provided in ASM
++;
++extern ASM_PFX(FspApiCommonContinue)
++extern ASM_PFX(AsmGetFspInfoHeader)
++
++;----------------------------------------------------------------------------
++; FspApiCommon API
++;
++; This is the FSP API common entry point to resume the FSP execution
++;
++;----------------------------------------------------------------------------
++global ASM_PFX(FspApiCommon)
++ASM_PFX(FspApiCommon):
++  ;
++  ; RAX holds the API index
++  ;
++
++  ;
++  ; Stack must be ready
++  ;
++  push   rax
++  add    rsp, 8
++  cmp    rax, [rsp - 8]
++  jz     FspApiCommon1
++  mov    rax, 08000000000000003h
++  jmp    exit
++
++FspApiCommon1:
++  ;
++  ; Verify the calling condition
++  ;
++  PUSHAD
++  push   0    ; FspInfoHeader
++  push   0    ; ApiRet
++  push   rdx  ; ApiParam 2
++  push   rcx  ; ApiParam 1
++
++  mov    rbp, rsp
++
++  mov    rsi, rax
++  mov    rdx, rcx  ; UPD Pointer
++  mov    rcx, rsi  ; API Index
++  call   ASM_PFX(FspApiCallingCheck)
++  cmp    rax, 0
++  mov    rax, rsi
++  jz     FspApiCommon2
++  mov    [rbp + STACK_SAVED_RAX_OFFSET], rax
++exit:
++  ret
++
++FspApiCommon2:
++  cmp    rax, 3   ;  FspMemoryInit API
++  jz     FspApiCommon3
++
++  call   ASM_PFX(AsmGetFspInfoHeader)
++  mov    [rbp + STACK_FSP_INFO_HDR_OFFSET], rax
++  jmp    ASM_PFX(Loader2PeiSwitchStack)
++
++FspApiCommon3:
++  jmp    ASM_PFX(FspApiCommonContinue)
+diff --git a/IntelFsp2Pkg/FspSecCore/X64/FspApiEntryM.nasm b/IntelFsp2Pkg/FspSecCore/X64/FspApiEntryM.nasm
+new file mode 100644
+index 0000000000..b9d3ccb02f
+--- /dev/null
++++ b/IntelFsp2Pkg/FspSecCore/X64/FspApiEntryM.nasm
+@@ -0,0 +1,208 @@
++;; @file
++;  Provide FSP API entry points.
++;
++; Copyright (c) 2016 - 2019, Intel Corporation. All rights reserved.<BR>
++; SPDX-License-Identifier: BSD-2-Clause-Patent
++;;
++    DEFAULT REL
++    SECTION .text
++
++STACK_FSP_INFO_HDR_OFFSET    EQU   3 * 8
++STACK_API_PARAM1_OFFSET      EQU   0 * 8
++
++FSP_HEADER_IMGBASE_OFFSET    EQU   1Ch
++FSP_HEADER_CFGREG_OFFSET     EQU   24h
++
++struc FSPM_UPD_COMMON
++    ; FSP_UPD_HEADER {
++    .FspUpdHeader:            resd    8
++    ; }
++    ; FSPM_ARCH_UPD {
++    .Revision:                resb    1
++    .Reserved:                resb    3
++    .NvsBufferPtr:            resd    1
++    .StackBase:               resd    1
++    .StackSize:               resd    1
++    .BootLoaderTolumSize:     resd    1
++    .BootMode:                resd    1
++    .Reserved1:               resb    8
++    ; }
++    .size:
++endstruc
++
++extern  ASM_PFX(SecStartup)
++extern  ASM_PFX(FspApiCommon)
++extern  ASM_PFX(AsmGetFspInfoHeader)
++extern  ASM_PFX(AsmGetFspBaseAddress)
++extern  ASM_PFX(PcdGet8 (PcdFspHeapSizePercentage))
++
++global ASM_PFX(FspPeiCoreEntryOff)
++ASM_PFX(FspPeiCoreEntryOff):
++   ;
++   ; This value will be pached by the build script
++   ;
++   DD    0x12345678
++
++global ASM_PFX(AsmGetPeiCoreOffset)
++ASM_PFX(AsmGetPeiCoreOffset):
++   lea   rax, [ASM_PFX(FspPeiCoreEntryOff)]
++   mov   eax, [rax]
++   ret
++
++;----------------------------------------------------------------------------
++; FspApiCommonContinue API
++;
++; This is the FSP API common entry point to resume the FSP execution
++;
++;----------------------------------------------------------------------------
++global ASM_PFX(FspApiCommonContinue)
++ASM_PFX(FspApiCommonContinue):
++  ;
++  ; EAX holds the API index
++  ;
++
++  ;
++  ; Update the FspInfoHeader pointer
++  ;
++  push   rax
++  call   ASM_PFX(AsmGetFspInfoHeader)
++  mov    [rbp + STACK_FSP_INFO_HDR_OFFSET], rax
++  pop    rax
++
++  ;
++  ; Create a Task Frame in the stack for the Boot Loader
++  ;
++
++
++  ;  Get Stackbase and StackSize from FSPM_UPD Param
++  mov    rdx, [rbp + STACK_API_PARAM1_OFFSET]
++  cmp    rdx, 0
++  jnz    FspStackSetup
++
++  ; Get UPD default values if FspmUpdDataPtr (ApiParam1) is null
++  xchg   rbx, rax
++  call   ASM_PFX(AsmGetFspInfoHeader)
++  mov    edx, [rax + FSP_HEADER_IMGBASE_OFFSET]
++  add    edx, [rax + FSP_HEADER_CFGREG_OFFSET]
++  xchg   rbx, rax
++
++FspStackSetup:
++  ;
++  ; StackBase = temp memory base, StackSize = temp memory size
++  ;
++  mov    edi, [rdx + FSPM_UPD_COMMON.StackBase]
++  mov    ecx, [rdx + FSPM_UPD_COMMON.StackSize]
++
++  ;
++  ; Keep using bootloader stack if heap size % is 0
++  ;
++  lea    rbx, [ASM_PFX(PcdGet8 (PcdFspHeapSizePercentage))]
++  mov    bl,  [rbx]
++  cmp    bl,  0
++  jz     SkipStackSwitch
++
++  ;
++  ; Set up a dedicated temp ram stack for FSP if FSP heap size % doesn't equal 0
++  ;
++  add    rdi, rcx
++  ;
++  ; Switch to new FSP stack
++  ;
++  xchg   rdi, rsp                                ; Exchange edi and esp, edi will be assigned to the current esp pointer and esp will be Stack base + Stack size
++
++SkipStackSwitch:
++  ;
++  ; If heap size % is 0:
++  ;   EDI is FSPM_UPD_COMMON.StackBase and will hold ESP later (boot loader stack pointer)
++  ;   ECX is FSPM_UPD_COMMON.StackSize
++  ;   ESP is boot loader stack pointer (no stack switch)
++  ;   BL  is 0 to indicate no stack switch (EBX will hold FSPM_UPD_COMMON.StackBase later)
++  ;
++  ; If heap size % is not 0
++  ;   EDI is boot loader stack pointer
++  ;   ECX is FSPM_UPD_COMMON.StackSize
++  ;   ESP is new stack (FSPM_UPD_COMMON.StackBase + FSPM_UPD_COMMON.StackSize)
++  ;   BL  is NOT 0 to indicate stack has switched
++  ;
++  cmp    bl, 0
++  jnz    StackHasBeenSwitched
++
++  mov    rbx, rdi                                ; Put FSPM_UPD_COMMON.StackBase to ebx as temp memory base
++  mov    rdi, rsp                                ; Put boot loader stack pointer to edi
++  jmp    StackSetupDone
++
++StackHasBeenSwitched:
++  mov    rbx, rsp                                ; Put Stack base + Stack size in ebx
++  sub    rbx, rcx                                ; Stack base + Stack size - Stack size as temp memory base
++
++StackSetupDone:
++
++  ;
++  ; Pass stack base and size into the PEI Core
++  ;
++  mov     rcx,  rcx
++  mov     rdx,  rbx
++
++  ;
++  ; Pass the API Idx to SecStartup
++  ;
++  push    rax
++
++  ;
++  ; Pass the BootLoader stack to SecStartup
++  ;
++  push    rdi
++
++  ;
++  ; Pass entry point of the PEI core
++  ;
++  call    ASM_PFX(AsmGetFspBaseAddress)
++  mov     r8, rax
++  call    ASM_PFX(AsmGetPeiCoreOffset)
++  lea     r9,  [r8 + rax]
++
++  ;
++  ; Pass Control into the PEI Core
++  ;
++  push    r9
++  push    r8
++  push    rdx
++  push    rcx
++  call    ASM_PFX(SecStartup)
++
++  jmp     $
++exit:
++  ret
++
++
++;----------------------------------------------------------------------------
++; FspMemoryInit API
++;
++; This FSP API is called after TempRamInit and initializes the memory.
++;
++;----------------------------------------------------------------------------
++global ASM_PFX(FspMemoryInitApi)
++ASM_PFX(FspMemoryInitApi):
++  mov    rax,  3 ; FSP_API_INDEX.FspMemoryInitApiIndex
++  jmp    ASM_PFX(FspApiCommon)
++
++;----------------------------------------------------------------------------
++; TempRamExitApi API
++;
++; This API tears down temporary RAM
++;
++;----------------------------------------------------------------------------
++global ASM_PFX(TempRamExitApi)
++ASM_PFX(TempRamExitApi):
++  mov    eax,  4 ; FSP_API_INDEX.TempRamExitApiIndex
++  jmp    ASM_PFX(FspApiCommon)
++
++;----------------------------------------------------------------------------
++; Module Entrypoint API
++;----------------------------------------------------------------------------
++global ASM_PFX(_ModuleEntryPoint)
++ASM_PFX(_ModuleEntryPoint):
++  jmp  $
++  ; Add reference to APIs so that it will not be optimized by compiler
++  jmp  ASM_PFX(FspMemoryInitApi)
++  jmp  ASM_PFX(TempRamExitApi)
+diff --git a/IntelFsp2Pkg/FspSecCore/X64/FspApiEntryS.nasm b/IntelFsp2Pkg/FspSecCore/X64/FspApiEntryS.nasm
+new file mode 100644
+index 0000000000..80c632aed6
+--- /dev/null
++++ b/IntelFsp2Pkg/FspSecCore/X64/FspApiEntryS.nasm
+@@ -0,0 +1,58 @@
++;; @file
++;  Provide FSP API entry points.
++;
++; Copyright (c) 2016, Intel Corporation. All rights reserved.<BR>
++; SPDX-License-Identifier: BSD-2-Clause-Patent
++;;
++
++    SECTION .text
++
++;
++; Following functions will be provided in C
++;
++extern ASM_PFX(FspApiCommon)
++
++;----------------------------------------------------------------------------
++; FspApiCommonContinue API
++;
++; This is the FSP API common entry point to resume the FSP execution
++;
++;----------------------------------------------------------------------------
++global ASM_PFX(FspApiCommonContinue)
++ASM_PFX(FspApiCommonContinue):
++  jmp $
++
++;----------------------------------------------------------------------------
++; NotifyPhase API
++;
++; This FSP API will notify the FSP about the different phases in the boot
++; process
++;
++;----------------------------------------------------------------------------
++global ASM_PFX(NotifyPhaseApi)
++ASM_PFX(NotifyPhaseApi):
++  mov    eax,  2 ; FSP_API_INDEX.NotifyPhaseApiIndex
++  jmp    ASM_PFX(FspApiCommon)
++
++;----------------------------------------------------------------------------
++; FspSiliconInit API
++;
++; This FSP API initializes the CPU and the chipset including the IO
++; controllers in the chipset to enable normal operation of these devices.
++;
++;----------------------------------------------------------------------------
++global ASM_PFX(FspSiliconInitApi)
++ASM_PFX(FspSiliconInitApi):
++  mov    eax,  5 ; FSP_API_INDEX.FspSiliconInitApiIndex
++  jmp    ASM_PFX(FspApiCommon)
++
++
++;----------------------------------------------------------------------------
++; Module Entrypoint API
++;----------------------------------------------------------------------------
++global ASM_PFX(_ModuleEntryPoint)
++ASM_PFX(_ModuleEntryPoint):
++  jmp  $
++  ; Add reference to APIs so that it will not be optimized by compiler
++  jmp  ASM_PFX(FspSiliconInitApi)
++  jmp  ASM_PFX(NotifyPhaseApi)
+diff --git a/IntelFsp2Pkg/FspSecCore/X64/FspHelper.nasm b/IntelFsp2Pkg/FspSecCore/X64/FspHelper.nasm
+new file mode 100644
+index 0000000000..59479a4266
+--- /dev/null
++++ b/IntelFsp2Pkg/FspSecCore/X64/FspHelper.nasm
+@@ -0,0 +1,35 @@
++;; @file
++;  Provide FSP helper function.
++;
++; Copyright (c) 2015 - 2016, Intel Corporation. All rights reserved.<BR>
++; SPDX-License-Identifier: BSD-2-Clause-Patent
++;;
++    DEFAULT  REL
++    SECTION .text
++
++global ASM_PFX(AsmGetFspBaseAddress)
++ASM_PFX(AsmGetFspBaseAddress):
++   call  ASM_PFX(AsmGetFspInfoHeader)
++   add   rax, 0x1C
++   mov   eax, [rax]
++   ret
++
++global ASM_PFX(AsmGetFspInfoHeader)
++ASM_PFX(AsmGetFspInfoHeader):
++   lea   rax, [ASM_PFX(AsmGetFspInfoHeader)]
++   DB    0x48, 0x2d               ; sub rax, 0x????????
++global ASM_PFX(FspInfoHeaderRelativeOff)
++ASM_PFX(FspInfoHeaderRelativeOff):
++   DD    0x12345678               ; This value must be patched by the build script
++   and   rax, 0xffffffff
++   ret
++
++global ASM_PFX(AsmGetFspInfoHeaderNoStack)
++ASM_PFX(AsmGetFspInfoHeaderNoStack):
++   lea   rax, [ASM_PFX(AsmGetFspInfoHeader)]
++   lea   rcx, [ASM_PFX(FspInfoHeaderRelativeOff)]
++   mov   ecx, [rcx]
++   sub   rax, rcx
++   and   rax, 0xffffffff
++   jmp   rdi
++
+diff --git a/IntelFsp2Pkg/FspSecCore/X64/InitializeFpu.nasm b/IntelFsp2Pkg/FspSecCore/X64/InitializeFpu.nasm
+new file mode 100644
+index 0000000000..3cec4eaf48
+--- /dev/null
++++ b/IntelFsp2Pkg/FspSecCore/X64/InitializeFpu.nasm
+@@ -0,0 +1,74 @@
++;------------------------------------------------------------------------------
++;
++; Copyright (c) 2015 - 2019, Intel Corporation. All rights reserved.<BR>
++; SPDX-License-Identifier: BSD-2-Clause-Patent
++;
++; Abstract:
++;
++;------------------------------------------------------------------------------
++
++
++SECTION .data
++;
++; Float control word initial value:
++; all exceptions masked, double-precision, round-to-nearest
++;
++ASM_PFX(mFpuControlWord):
++    dw    0x027F
++;
++; Multimedia-extensions control word:
++; all exceptions masked, round-to-nearest, flush to zero for masked underflow
++;
++ASM_PFX(mMmxControlWord):
++     dd     0x01F80
++
++SECTION .text
++
++;
++; Initializes floating point units for requirement of UEFI specification.
++;
++; This function initializes floating-point control word to 0x027F (all exceptions
++; masked,double-precision, round-to-nearest) and multimedia-extensions control word
++; (if supported) to 0x1F80 (all exceptions masked, round-to-nearest, flush to zero
++; for masked underflow).
++;
++
++global ASM_PFX(InitializeFloatingPointUnits)
++ASM_PFX(InitializeFloatingPointUnits):
++
++
++    push    rbx
++
++    ;
++    ; Initialize floating point units
++    ;
++    finit
++    mov     rax, ASM_PFX(mFpuControlWord)
++    fldcw   [rax]
++
++    ;
++    ; Use CpuId instruction (CPUID.01H:EDX.SSE[bit 25] = 1) to test
++    ; whether the processor supports SSE instruction.
++    ;
++    mov     rax, 1
++    cpuid
++    bt      rdx, 25
++    jnc     Done
++
++    ;
++    ; Set OSFXSR bit 9 in CR4
++    ;
++    mov     rax, cr4
++    or      rax, BIT9
++    mov     cr4, rax
++
++    ;
++    ; The processor should support SSE instruction and we can use
++    ; ldmxcsr instruction
++    ;
++    mov     rax, ASM_PFX(mMmxControlWord)
++    ldmxcsr [rax]
++Done:
++    pop     rbx
++
++    ret
+diff --git a/IntelFsp2Pkg/FspSecCore/X64/MicrocodeLoadNasm.inc b/IntelFsp2Pkg/FspSecCore/X64/MicrocodeLoadNasm.inc
+new file mode 100644
+index 0000000000..2b53f5d9fe
+--- /dev/null
++++ b/IntelFsp2Pkg/FspSecCore/X64/MicrocodeLoadNasm.inc
+@@ -0,0 +1,10 @@
++;; @file
++;
++;@copyright
++; Copyright (c) 2015 - 2016, Intel Corporation. All rights reserved.<BR>
++; SPDX-License-Identifier: BSD-2-Clause-Patent
++;;
++
++MSR_IA32_PLATFORM_ID        equ     000000017h
++MSR_IA32_BIOS_UPDT_TRIG     equ     000000079h
++MSR_IA32_BIOS_SIGN_ID       equ     00000008bh
+\ No newline at end of file
+diff --git a/IntelFsp2Pkg/FspSecCore/X64/ReadEsp.nasm b/IntelFsp2Pkg/FspSecCore/X64/ReadEsp.nasm
+new file mode 100644
+index 0000000000..e407435a43
+--- /dev/null
++++ b/IntelFsp2Pkg/FspSecCore/X64/ReadEsp.nasm
+@@ -0,0 +1,22 @@
++;; @file
++;  Provide read ESP function
++;
++; Copyright (c) 2019, Intel Corporation. All rights reserved.<BR>
++; SPDX-License-Identifier: BSD-2-Clause-Patent
++;;
++;------------------------------------------------------------------------------
++
++    SECTION .text
++
++;------------------------------------------------------------------------------
++; UINT32
++; EFIAPI
++; AsmReadEsp (
++;   VOID
++;   );
++;------------------------------------------------------------------------------
++global ASM_PFX(AsmReadEsp)
++ASM_PFX(AsmReadEsp):
++    mov     eax, esp
++    ret
++
+diff --git a/IntelFsp2Pkg/FspSecCore/X64/SaveRestoreSseNasm.inc b/IntelFsp2Pkg/FspSecCore/X64/SaveRestoreSseNasm.inc
+new file mode 100644
+index 0000000000..5800cfad00
+--- /dev/null
++++ b/IntelFsp2Pkg/FspSecCore/X64/SaveRestoreSseNasm.inc
+@@ -0,0 +1,177 @@
++;------------------------------------------------------------------------------
++;
++; Copyright (c) 2015 - 2019, Intel Corporation. All rights reserved.<BR>
++; SPDX-License-Identifier: BSD-2-Clause-Patent
++;
++; Abstract:
++;
++;   Provide macro for register save/restore using SSE registers
++;
++;------------------------------------------------------------------------------
++
++;
++; Define SSE instruction set
++;
++%ifdef USE_SSE41_FLAG
++;
++; Define SSE macros using SSE 4.1 instructions
++; args 1:XMM, 2:IDX, 3:REG
++%macro SXMMN           3
++             pinsrd  %1, %3, (%2 & 3)
++             %endmacro
++
++;
++;args 1:XMM, 2:REG, 3:IDX
++;
++%macro LXMMN           3
++             pextrd  %2, %1, (%3 & 3)
++             %endmacro
++%else
++;
++; Define SSE macros using SSE 2 instructions
++; args 1:XMM, 2:IDX, 3:REG
++%macro SXMMN       3
++             pinsrw  %1, %3, (%2 & 3) * 2
++             ror     %3, 16
++             pinsrw  %1, %3, (%2 & 3) * 2 + 1
++             rol     %3, 16
++             %endmacro
++
++;
++;args 1:XMM, 2:REG,  3:IDX
++;
++%macro LXMMN    3
++             pshufd  %1, %1,  ((0E4E4E4h >> (%3 * 2))  & 0FFh)
++             movd    %2, %1
++             pshufd  %1, %1,  ((0E4E4E4h >> (%3 * 2 + (%3 & 1) * 4)) & 0FFh)
++             %endmacro
++%endif
++
++;
++; XMM7 to save/restore EBP, EBX, ESI, EDI
++;
++%macro SAVE_REGS   0
++  SXMMN      xmm7, 0, ebp
++  SXMMN      xmm7, 1, ebx
++  SXMMN      xmm7, 2, esi
++  SXMMN      xmm7, 3, edi
++  SAVE_ESP
++             %endmacro
++
++%macro LOAD_REGS    0
++  LXMMN      xmm7, ebp, 0
++  LXMMN      xmm7, ebx, 1
++  LXMMN      xmm7, esi, 2
++  LXMMN      xmm7, edi, 3
++  LOAD_ESP
++             %endmacro
++
++;
++; XMM6 to save/restore EAX, EDX, ECX, ESP
++;
++%macro LOAD_EAX     0
++  LXMMN      xmm6, eax, 1
++             %endmacro
++
++%macro SAVE_EAX     0
++  SXMMN      xmm6, 1, eax
++             %endmacro
++
++%macro LOAD_EDX     0
++  LXMMN      xmm6, edx, 2
++             %endmacro
++
++%macro SAVE_EDX     0
++  SXMMN      xmm6, 2, edx
++             %endmacro
++
++%macro SAVE_ECX     0
++  SXMMN      xmm6, 3, ecx
++             %endmacro
++
++%macro LOAD_ECX     0
++  LXMMN      xmm6, ecx, 3
++             %endmacro
++
++%macro SAVE_ESP     0
++  SXMMN      xmm6, 0, esp
++             %endmacro
++
++%macro LOAD_ESP     0
++  movd       esp,  xmm6
++             %endmacro
++;
++; XMM5 for calling stack
++; arg 1:Entry
++%macro CALL_XMM       1
++             mov     esi, %%ReturnAddress
++             pslldq  xmm5, 4
++%ifdef USE_SSE41_FLAG
++             pinsrd  xmm5, esi, 0
++%else
++             pinsrw  xmm5, esi, 0
++             ror     esi,  16
++             pinsrw  xmm5, esi, 1
++%endif
++             mov     esi,  %1
++             jmp     esi
++%%ReturnAddress:
++             %endmacro
++
++%macro RET_XMM       0
++             movd    esi, xmm5
++             psrldq  xmm5, 4
++             jmp     esi
++             %endmacro
++
++%macro ENABLE_SSE   0
++            ;
++            ; Initialize floating point units
++            ;
++            jmp     NextAddress
++SseError:
++            ;
++            ; Processor has to support SSE
++            ;
++            jmp     SseError
++
++NextAddress:
++            ;
++            ; Float control word initial value:
++            ; all exceptions masked, double-precision, round-to-nearest
++            ;
++            finit
++            ;lea     eax, [ASM_PFX(FspInfoHeaderRelativeOff)]
++            fldcw   [eax + 4];  FpuControlWord
++
++            ;
++            ; Use CpuId instruction (CPUID.01H:EDX.SSE[bit 25] = 1) to test
++            ; whether the processor supports SSE instruction.
++            ;
++            mov     eax, 1
++            cpuid
++            bt      edx, 25
++            jnc     SseError
++
++%ifdef USE_SSE41_FLAG
++            ;
++            ; SSE 4.1 support
++            ;
++            bt      ecx, 19
++            jnc     SseError
++%endif
++
++            ;
++            ; Set OSFXSR bit (bit #9) & OSXMMEXCPT bit (bit #10)
++            ;
++            mov     eax, cr4
++            or      eax, 00000600h
++            mov     cr4, eax
++
++            ;
++            ; The processor should support SSE instruction and we can use
++            ; ldmxcsr instruction
++            ;
++            ;mov     eax, ASM_PFX(FspInfoHeaderRelativeOff)
++            ldmxcsr [eax + 8]  ;MmxControlWord
++            %endmacro
+diff --git a/IntelFsp2Pkg/Include/FspEas/FspApi.h b/IntelFsp2Pkg/Include/FspEas/FspApi.h
+index dcf489dbe6..a81bdff9f4 100644
+--- a/IntelFsp2Pkg/Include/FspEas/FspApi.h
++++ b/IntelFsp2Pkg/Include/FspEas/FspApi.h
+@@ -57,12 +57,12 @@ typedef struct {
+   /// Pointer to the non-volatile storage (NVS) data buffer.
+   /// If it is NULL it indicates the NVS data is not available.
+   ///
+-  VOID                        *NvsBufferPtr;
++  UINT32                      NvsBufferPtr;
+   ///
+   /// Pointer to the temporary stack base address to be
+   /// consumed inside FspMemoryInit() API.
+   ///
+-  VOID                        *StackBase;
++  UINT32                      StackBase;
+   ///
+   /// Temporary stack size to be consumed inside
+   /// FspMemoryInit() API.
+diff --git a/IntelFsp2Pkg/Include/FspGlobalData.h b/IntelFsp2Pkg/Include/FspGlobalData.h
+index 1896b0240a..b76f8533e0 100644
+--- a/IntelFsp2Pkg/Include/FspGlobalData.h
++++ b/IntelFsp2Pkg/Include/FspGlobalData.h
+@@ -41,8 +41,8 @@ typedef struct  {
+    UINT32             Signature;
+    UINT8              Version;
+    UINT8              Reserved1[3];
+-   UINT32             CoreStack;
+-   UINT32             StatusCode;
++   UINTN              *CoreStack;
++   UINTN              StatusCode;
+    UINT32             Reserved2[8];
+    FSP_PLAT_DATA      PlatformData;
+    FSP_INFO_HEADER    *FspInfoHeader;
+diff --git a/IntelFsp2Pkg/Include/Library/FspCommonLib.h b/IntelFsp2Pkg/Include/Library/FspCommonLib.h
+index 197b10b42f..85b4c3410f 100644
+--- a/IntelFsp2Pkg/Include/Library/FspCommonLib.h
++++ b/IntelFsp2Pkg/Include/Library/FspCommonLib.h
+@@ -38,7 +38,7 @@ GetFspGlobalDataPointer (
+ 
+   @retval ApiParameter FSP API first parameter passed by the bootloader.
+ **/
+-UINT32
++UINTN
+ EFIAPI
+ GetFspApiParameter (
+   VOID
+@@ -49,7 +49,7 @@ GetFspApiParameter (
+ 
+   @retval ApiParameter FSP API second parameter passed by the bootloader.
+ **/
+-UINT32
++UINTN
+ EFIAPI
+ GetFspApiParameter2 (
+   VOID
+@@ -87,7 +87,7 @@ SetFspApiParameter (
+ VOID
+ EFIAPI
+ SetFspApiReturnStatus (
+-  IN UINT32  ReturnStatus
++  IN UINTN  ReturnStatus
+   );
+ 
+ /**
+@@ -276,7 +276,7 @@ SetFspApiCallingIndex (
+ 
+   @retval StatusCode
+ **/
+-UINT32
++UINTN
+ EFIAPI
+ GetPhaseStatusCode (
+   VOID
+diff --git a/IntelFsp2Pkg/Library/BaseCacheLib/BaseCacheLib.inf b/IntelFsp2Pkg/Library/BaseCacheLib/BaseCacheLib.inf
+index d9034bcbaf..32d11e4441 100644
+--- a/IntelFsp2Pkg/Library/BaseCacheLib/BaseCacheLib.inf
++++ b/IntelFsp2Pkg/Library/BaseCacheLib/BaseCacheLib.inf
+@@ -15,7 +15,7 @@
+   VERSION_STRING                 = 1.0
+   LIBRARY_CLASS                  = CacheLib
+ 
+-[Sources.IA32]
++[Sources]
+   CacheLib.c
+   CacheLibInternal.h
+ 
+diff --git a/IntelFsp2Pkg/Library/BaseCacheLib/CacheLib.c b/IntelFsp2Pkg/Library/BaseCacheLib/CacheLib.c
+index 17e895c345..b23ef78be7 100644
+--- a/IntelFsp2Pkg/Library/BaseCacheLib/CacheLib.c
++++ b/IntelFsp2Pkg/Library/BaseCacheLib/CacheLib.c
+@@ -184,13 +184,13 @@ EfiProgramMtrr (
+   // MTRR Physical Base
+   //
+   TempQword = (MemoryAddress & ValidMtrrAddressMask) | MemoryCacheType;
+-  AsmWriteMsr64 (MtrrNumber, TempQword);
++  AsmWriteMsr64 ((UINT32)MtrrNumber, TempQword);
+ 
+   //
+   // MTRR Physical Mask
+   //
+   TempQword = ~(MemoryLength - 1);
+-  AsmWriteMsr64 (MtrrNumber + 1, (TempQword & ValidMtrrAddressMask) | B_EFI_MSR_CACHE_MTRR_VALID);
++  AsmWriteMsr64 ((UINT32)MtrrNumber + 1, (TempQword & ValidMtrrAddressMask) | B_EFI_MSR_CACHE_MTRR_VALID);
+ 
+   EfiRecoverCacheMtrr (TRUE, OldMtrr);
+ }
+diff --git a/IntelFsp2Pkg/Library/BaseFspCommonLib/FspCommonLib.c b/IntelFsp2Pkg/Library/BaseFspCommonLib/FspCommonLib.c
+index 0a5bc76aa7..7ca46c160f 100644
+--- a/IntelFsp2Pkg/Library/BaseFspCommonLib/FspCommonLib.c
++++ b/IntelFsp2Pkg/Library/BaseFspCommonLib/FspCommonLib.c
+@@ -27,24 +27,16 @@
+ //   sidt    fword ptr [esp]
+ //
+ typedef struct {
+-  UINT16    IdtrLimit;
+-  UINT32    IdtrBase;
+-  UINT16    Reserved;
+-  UINT32    Edi;
+-  UINT32    Esi;
+-  UINT32    Ebp;
+-  UINT32    Esp;
+-  UINT32    Ebx;
+-  UINT32    Edx;
+-  UINT32    Ecx;
+-  UINT32    Eax;
+-  UINT16    Flags[2];
+-  UINT32    FspInfoHeader;
+-  UINT32    ApiRet;
+-  UINT32    ApiParam[2];
++  UINT64   ApiParam[2];
++  UINT64   ApiRet;
++  UINT64   FspInfoHeader;
++  UINT64   Reg[8];     //RAX, RBX, RCX, RDX, RSI, RDI, RBP, FLG
++  UINT64   Rxx[8];     //R8 .. R15
++  UINT64   Xmm[10*2];  //XMM6-XMM15
++  UINT64   Idtr[2];
+ } CONTEXT_STACK;
+ 
+-#define CONTEXT_STACK_OFFSET(x)  (UINT32)&((CONTEXT_STACK *)(UINTN)0)->x
++#define CONTEXT_STACK_OFFSET(x)  (UINT32)(UINTN)&((CONTEXT_STACK *)(UINTN)0)->x
+ 
+ #pragma pack()
+ 
+@@ -74,9 +66,12 @@ GetFspGlobalDataPointer (
+   VOID
+   )
+ {
++  UINT32             Base;
+   FSP_GLOBAL_DATA   *FspData;
+ 
+-  FspData = *(FSP_GLOBAL_DATA  **)(UINTN)PcdGet32(PcdGlobalDataPointerAddress);
++  Base = *(UINT32 *)(UINTN)PcdGet32(PcdGlobalDataPointerAddress);
++  FspData = (FSP_GLOBAL_DATA *)(UINTN)Base;
++
+   return FspData;
+ }
+ 
+@@ -85,7 +80,7 @@ GetFspGlobalDataPointer (
+ 
+   @retval ApiParameter FSP API first parameter passed by the bootloader.
+ **/
+-UINT32
++UINTN
+ EFIAPI
+ GetFspApiParameter (
+   VOID
+@@ -94,7 +89,7 @@ GetFspApiParameter (
+   FSP_GLOBAL_DATA  *FspData;
+ 
+   FspData  = GetFspGlobalDataPointer ();
+-  return *(UINT32 *)(UINTN)(FspData->CoreStack + CONTEXT_STACK_OFFSET(ApiParam[0]));
++  return *(UINTN *)((UINTN)FspData->CoreStack + CONTEXT_STACK_OFFSET(ApiParam[0]));
+ }
+ 
+ /**
+@@ -111,7 +106,7 @@ GetFspEntryStack (
+   FSP_GLOBAL_DATA  *FspData;
+ 
+   FspData  = GetFspGlobalDataPointer ();
+-  return (VOID*)(FspData->CoreStack + CONTEXT_STACK_OFFSET(ApiParam[0]));
++  return (VOID*)((UINTN)FspData->CoreStack + CONTEXT_STACK_OFFSET(ApiParam[0]));
+ }
+ 
+ /**
+@@ -119,7 +114,7 @@ GetFspEntryStack (
+ 
+   @retval ApiParameter FSP API second parameter passed by the bootloader.
+ **/
+-UINT32
++UINTN
+ EFIAPI
+ GetFspApiParameter2 (
+   VOID
+@@ -128,7 +123,7 @@ GetFspApiParameter2 (
+   FSP_GLOBAL_DATA  *FspData;
+ 
+   FspData  = GetFspGlobalDataPointer ();
+-  return *(UINT32 *)(UINTN)(FspData->CoreStack + CONTEXT_STACK_OFFSET(ApiParam[1]));
++  return *(UINTN *)((UINTN)FspData->CoreStack + CONTEXT_STACK_OFFSET(ApiParam[1]));
+ }
+ 
+ /**
+@@ -146,7 +141,7 @@ SetFspApiParameter (
+   FSP_GLOBAL_DATA  *FspData;
+ 
+   FspData  = GetFspGlobalDataPointer ();
+-  *(UINT32 *)(UINTN)(FspData->CoreStack + CONTEXT_STACK_OFFSET(ApiParam)) = Value;
++  *(UINT32 *)((UINTN)FspData->CoreStack + CONTEXT_STACK_OFFSET(ApiParam)) = Value;
+ }
+ 
+ /**
+@@ -158,13 +153,13 @@ SetFspApiParameter (
+ VOID
+ EFIAPI
+ SetFspApiReturnStatus (
+-  IN UINT32  ReturnStatus
++  IN UINTN  ReturnStatus
+   )
+ {
+   FSP_GLOBAL_DATA  *FspData;
+ 
+   FspData  = GetFspGlobalDataPointer ();
+-  *(UINT32 *)(UINTN)(FspData->CoreStack + CONTEXT_STACK_OFFSET(Eax)) = ReturnStatus;
++  *(UINTN *)((UINTN)FspData->CoreStack + CONTEXT_STACK_OFFSET(Reg[0])) = ReturnStatus;
+ }
+ 
+ /**
+@@ -180,19 +175,19 @@ SetFspCoreStackPointer (
+   )
+ {
+   FSP_GLOBAL_DATA  *FspData;
+-  UINT32           *OldStack;
+-  UINT32           *NewStack;
++  UINTN            *OldStack;
++  UINTN            *NewStack;
+   UINT32           StackContextLen;
+ 
+   FspData  = GetFspGlobalDataPointer ();
+-  StackContextLen = sizeof(CONTEXT_STACK) / sizeof(UINT32);
++  StackContextLen = sizeof(CONTEXT_STACK) / sizeof(UINTN);
+ 
+   //
+   // Reserve space for the ContinuationFunc two parameters
+   //
+-  OldStack = (UINT32 *)FspData->CoreStack;
+-  NewStack = (UINT32 *)NewStackTop - StackContextLen - 2;
+-  FspData->CoreStack = (UINT32)NewStack;
++  OldStack = (UINTN *)FspData->CoreStack;
++  NewStack = (UINTN *)NewStackTop - (StackContextLen + 2);
++  FspData->CoreStack = NewStack;
+   while (StackContextLen-- != 0) {
+     *NewStack++ = *OldStack++;
+   }
+@@ -432,7 +427,8 @@ GetFspInfoHeaderFromApiContext (
+   FSP_GLOBAL_DATA  *FspData;
+ 
+   FspData  = GetFspGlobalDataPointer ();
+-  return  (FSP_INFO_HEADER *)(*(UINT32 *)(UINTN)(FspData->CoreStack + CONTEXT_STACK_OFFSET(FspInfoHeader)));
++
++  return  (FSP_INFO_HEADER *)(*(UINTN *)((UINTN)FspData->CoreStack + CONTEXT_STACK_OFFSET(FspInfoHeader)));
+ }
+ 
+ /**
+@@ -449,7 +445,7 @@ GetFspCfgRegionDataPointer (
+   FSP_INFO_HEADER   *FspInfoHeader;
+ 
+   FspInfoHeader = GetFspInfoHeader ();
+-  return (VOID *)(FspInfoHeader->ImageBase + FspInfoHeader->CfgRegionOffset);
++  return (VOID *)(UINTN)(FspInfoHeader->ImageBase + FspInfoHeader->CfgRegionOffset);
+ }
+ 
+ /**
+@@ -488,7 +484,7 @@ SetFspApiCallingIndex (
+ 
+   @retval StatusCode
+ **/
+-UINT32
++UINTN
+ EFIAPI
+ GetPhaseStatusCode (
+   VOID
+diff --git a/IntelFsp2Pkg/Library/BaseFspDebugLibSerialPort/BaseFspDebugLibSerialPort.inf b/IntelFsp2Pkg/Library/BaseFspDebugLibSerialPort/BaseFspDebugLibSerialPort.inf
+index 14b1899e6c..4d474b9614 100644
+--- a/IntelFsp2Pkg/Library/BaseFspDebugLibSerialPort/BaseFspDebugLibSerialPort.inf
++++ b/IntelFsp2Pkg/Library/BaseFspDebugLibSerialPort/BaseFspDebugLibSerialPort.inf
+@@ -25,6 +25,9 @@
+ [Sources.Ia32]
+   Ia32/FspDebug.nasm
+ 
++[Sources.X64]
++  Ia32/FspDebug.nasm
++
+ [Packages]
+   MdePkg/MdePkg.dec
+   IntelFsp2Pkg/IntelFsp2Pkg.dec
+diff --git a/IntelFsp2Pkg/Library/BaseFspDebugLibSerialPort/X64/FspDebug.nasm b/IntelFsp2Pkg/Library/BaseFspDebugLibSerialPort/X64/FspDebug.nasm
+new file mode 100644
+index 0000000000..4143ab17e9
+--- /dev/null
++++ b/IntelFsp2Pkg/Library/BaseFspDebugLibSerialPort/X64/FspDebug.nasm
+@@ -0,0 +1,25 @@
++;------------------------------------------------------------------------------
++;
++; Copyright (c) 2016, Intel Corporation. All rights reserved.<BR>
++; SPDX-License-Identifier: BSD-2-Clause-Patent
++;
++; Abstract:
++;
++;   FSP Debug functions
++;
++;------------------------------------------------------------------------------
++
++    SECTION .text
++
++;------------------------------------------------------------------------------
++; UINT32 *
++; EFIAPI
++; GetStackFramePointer (
++;   VOID
++;   );
++;------------------------------------------------------------------------------
++global ASM_PFX(GetStackFramePointer)
++ASM_PFX(GetStackFramePointer):
++    mov     eax, ebp
++    ret
++
+diff --git a/IntelFsp2Pkg/Library/BaseFspSwitchStackLib/BaseFspSwitchStackLib.inf b/IntelFsp2Pkg/Library/BaseFspSwitchStackLib/BaseFspSwitchStackLib.inf
+index 3dcf3b9598..6909aec651 100644
+--- a/IntelFsp2Pkg/Library/BaseFspSwitchStackLib/BaseFspSwitchStackLib.inf
++++ b/IntelFsp2Pkg/Library/BaseFspSwitchStackLib/BaseFspSwitchStackLib.inf
+@@ -15,12 +15,15 @@
+   VERSION_STRING                 = 1.0
+   LIBRARY_CLASS                  = FspSwitchStackLib
+ 
+-[Sources.IA32]
++[Sources]
+   FspSwitchStackLib.c
+ 
+ [Sources.IA32]
+   Ia32/Stack.nasm
+ 
++[Sources.X64]
++  X64/Stack.nasm
++
+ [Packages]
+   MdePkg/MdePkg.dec
+   IntelFsp2Pkg/IntelFsp2Pkg.dec
+diff --git a/IntelFsp2Pkg/Library/BaseFspSwitchStackLib/FspSwitchStackLib.c b/IntelFsp2Pkg/Library/BaseFspSwitchStackLib/FspSwitchStackLib.c
+index fd553db629..936132d36d 100644
+--- a/IntelFsp2Pkg/Library/BaseFspSwitchStackLib/FspSwitchStackLib.c
++++ b/IntelFsp2Pkg/Library/BaseFspSwitchStackLib/FspSwitchStackLib.c
+@@ -20,13 +20,14 @@
+ 
+ 
+ **/
+-UINT32
++UINTN *
++EFIAPI
+ SwapStack (
+-  IN  UINT32 NewStack
++  IN  UINTN  *NewStack
+   )
+ {
+   FSP_GLOBAL_DATA  *FspData;
+-  UINT32         OldStack;
++  UINTN            *OldStack;
+ 
+   FspData  = GetFspGlobalDataPointer ();
+   OldStack = FspData->CoreStack;
+diff --git a/IntelFsp2Pkg/Library/BaseFspSwitchStackLib/X64/Stack.nasm b/IntelFsp2Pkg/Library/BaseFspSwitchStackLib/X64/Stack.nasm
+new file mode 100644
+index 0000000000..303cfbf375
+--- /dev/null
++++ b/IntelFsp2Pkg/Library/BaseFspSwitchStackLib/X64/Stack.nasm
+@@ -0,0 +1,145 @@
++;------------------------------------------------------------------------------
++;
++; Copyright (c) 2016 - 2019, Intel Corporation. All rights reserved.<BR>
++; SPDX-License-Identifier: BSD-2-Clause-Patent
++;
++; Abstract:
++;
++;   Switch the stack from temporary memory to permanent memory.
++;
++;------------------------------------------------------------------------------
++
++    SECTION .text
++
++
++
++;
++; Define SSE macros using SSE 4.1 instructions
++; args 1:XMM, 2:IDX, 3:REG
++%macro PUSHAD  0
++       push    0    ; Idt
++       push    0
++       sidt    [rsp]
++
++       sub     rsp, 0x10 * 10
++       movdqu  [rsp + 0x00], xmm6
++       movdqu  [rsp + 0x10], xmm7
++       movdqu  [rsp + 0x20], xmm8
++       movdqu  [rsp + 0x30], xmm9
++       movdqu  [rsp + 0x40], xmm10
++       movdqu  [rsp + 0x50], xmm11
++       movdqu  [rsp + 0x60], xmm12
++       movdqu  [rsp + 0x70], xmm13
++       movdqu  [rsp + 0x80], xmm14
++       movdqu  [rsp + 0x90], xmm15
++
++       push    r15
++       push    r14
++       push    r13
++       push    r12
++       push    r11
++       push    r10
++       push    r9
++       push    r8
++
++       pushfq
++       push    rbp
++       push    rdi
++       push    rsi
++       push    rdx
++       push    rcx
++       push    rbx
++       push    rax
++
++       %endmacro
++
++
++%macro POPAD   0
++
++       pop     rax
++       pop     rbx
++       pop     rcx
++       pop     rdx
++       pop     rsi
++       pop     rdi
++       pop     rbp
++       popfq
++
++       pop     r8
++       pop     r9
++       pop     r10
++       pop     r11
++       pop     r12
++       pop     r13
++       pop     r14
++       pop     r15
++
++       movdqu  xmm6,  [rsp + 0x00]
++       movdqu  xmm7,  [rsp + 0x10]
++       movdqu  xmm8,  [rsp + 0x20]
++       movdqu  xmm9,  [rsp + 0x30]
++       movdqu  xmm10, [rsp + 0x40]
++       movdqu  xmm11, [rsp + 0x50]
++       movdqu  xmm12, [rsp + 0x60]
++       movdqu  xmm13, [rsp + 0x70]
++       movdqu  xmm14, [rsp + 0x80]
++       movdqu  xmm15, [rsp + 0x90]
++       add     rsp, 0x10 * 10
++
++       lidt    [rsp]
++       add     rsp, 16
++
++       %endmacro
++
++extern ASM_PFX(SwapStack)
++
++;------------------------------------------------------------------------------
++; UINT32
++; EFIAPI
++; Pei2LoaderSwitchStack (
++;   VOID
++;   )
++;------------------------------------------------------------------------------
++global ASM_PFX(Pei2LoaderSwitchStack)
++ASM_PFX(Pei2LoaderSwitchStack):
++    xor     rax, rax
++    jmp     ASM_PFX(FspSwitchStack)
++
++;------------------------------------------------------------------------------
++; UINT32
++; EFIAPI
++; Loader2PeiSwitchStack (
++;   VOID
++;   )
++;------------------------------------------------------------------------------
++global ASM_PFX(Loader2PeiSwitchStack)
++ASM_PFX(Loader2PeiSwitchStack):
++    jmp     ASM_PFX(FspSwitchStack)
++
++;------------------------------------------------------------------------------
++; UINT32
++; EFIAPI
++; FspSwitchStack (
++;   VOID
++;   )
++;------------------------------------------------------------------------------
++global ASM_PFX(FspSwitchStack)
++ASM_PFX(FspSwitchStack):
++    ; Save current contexts
++    cmp     rax, 0
++    jnz     SkipSaveContents
++
++    PUSHAD
++    sub     rsp, 4* 8
++
++SkipSaveContents:
++    ; Load new stack
++    mov     rcx, rsp
++    call    ASM_PFX(SwapStack)
++    mov     rsp, rax
++
++    ; Restore previous contexts
++    add     rsp, 4 * 8
++    POPAD
++
++    ret
+diff --git a/IntelFsp2Pkg/Library/SecFspSecPlatformLibNull/SecFspSecPlatformLibNull.inf b/IntelFsp2Pkg/Library/SecFspSecPlatformLibNull/SecFspSecPlatformLibNull.inf
+index 42e7d83c32..cc54dd5172 100644
+--- a/IntelFsp2Pkg/Library/SecFspSecPlatformLibNull/SecFspSecPlatformLibNull.inf
++++ b/IntelFsp2Pkg/Library/SecFspSecPlatformLibNull/SecFspSecPlatformLibNull.inf
+@@ -39,6 +39,10 @@
+   Ia32/Flat32.nasm
+   Ia32/SecCarInit.nasm
+ 
++[Sources.X64]
++  X64/Flat32.nasm
++  X64/SecCarInit.nasm
++
+ ################################################################################
+ #
+ # Package Dependency Section - list of Package files that are required for
+diff --git a/IntelFsp2Pkg/Library/SecFspSecPlatformLibNull/X64/Flat32.nasm b/IntelFsp2Pkg/Library/SecFspSecPlatformLibNull/X64/Flat32.nasm
+new file mode 100644
+index 0000000000..e004de2d52
+--- /dev/null
++++ b/IntelFsp2Pkg/Library/SecFspSecPlatformLibNull/X64/Flat32.nasm
+@@ -0,0 +1,121 @@
++;; @file
++;  This is the code that goes from real-mode to protected mode.
++;  It consumes the reset vector, configures the stack.
++;
++; Copyright (c) 2015 - 2019, Intel Corporation. All rights reserved.<BR>
++; SPDX-License-Identifier: BSD-2-Clause-Patent
++;;
++
++;
++; Define assembler characteristics
++;
++
++extern   ASM_PFX(TempRamInitApi)
++
++SECTION .text
++
++%macro RET_ESI  0
++
++  movd    esi, mm7                      ; restore ESP from MM7
++  jmp     esi
++
++%endmacro
++
++;
++; Perform early platform initialization
++;
++global ASM_PFX(SecPlatformInit)
++ASM_PFX(SecPlatformInit):
++
++  RET_ESI
++
++;
++; Protected mode portion initializes stack, configures cache, and calls C entry point
++;
++
++;----------------------------------------------------------------------------
++;
++; Procedure:    ProtectedModeEntryPoint
++;
++; Input:        Executing in 32 Bit Protected (flat) mode
++;               cs: 0-4GB
++;               ds: 0-4GB
++;               es: 0-4GB
++;               fs: 0-4GB
++;               gs: 0-4GB
++;               ss: 0-4GB
++;
++; Output:       This function never returns
++;
++; Destroys:
++;               ecx
++;               edi
++;               esi
++;               esp
++;
++; Description:
++;               Perform any essential early platform initialisation
++;               Setup a stack
++;
++;----------------------------------------------------------------------------
++global ASM_PFX(ProtectedModeEntryPoint)
++ASM_PFX(ProtectedModeEntryPoint):
++  ;
++  ; Dummy function. Consume 2 API to make sure they can be linked.
++  ;
++  mov  eax, ASM_PFX(TempRamInitApi)
++
++  ; Should never return
++  jmp  $
++
++;
++; ROM-based Global-Descriptor Table for the PEI Phase
++;
++align 16
++global  ASM_PFX(BootGdtTable)
++
++;
++; GDT[0]: 0x00: Null entry, never used.
++;
++NULL_SEL        equ     $ - GDT_BASE        ; Selector [0]
++GDT_BASE:
++ASM_PFX(BootGdtTable):    DD      0
++                          DD      0
++;
++; Linear code segment descriptor
++;
++LINEAR_CODE_SEL equ     $ - GDT_BASE        ; Selector [0x8]
++        DW      0FFFFh                      ; limit 0xFFFF
++        DW      0                           ; base 0
++        DB      0
++        DB      09Bh                        ; present, ring 0, data, expand-up, not-writable
++        DB      0CFh                        ; page-granular, 32-bit
++        DB      0
++;
++; System data segment descriptor
++;
++SYS_DATA_SEL    equ     $ - GDT_BASE        ; Selector [0x10]
++        DW      0FFFFh                      ; limit 0xFFFF
++        DW      0                           ; base 0
++        DB      0
++        DB      093h                        ; present, ring 0, data, expand-up, not-writable
++        DB      0CFh                        ; page-granular, 32-bit
++        DB      0
++
++GDT_SIZE        EQU     $ - GDT_BASE        ; Size, in bytes
++
++;
++; GDT Descriptor
++;
++GdtDesc:                                    ; GDT descriptor
++        DW      GDT_SIZE - 1                ; GDT limit
++        DD      GDT_BASE                    ; GDT base address
++
++global ASM_PFX(ProtectedModeEntryLinearAddress)
++global ASM_PFX(ProtectedModeEntryLinearOffset)
++
++ASM_PFX(ProtectedModeEntryLinearAddress):
++ASM_PFX(ProtectedModeEntryLinearOffset):
++  DD      ASM_PFX(ProtectedModeEntryPoint)  ; Offset of our 32 bit code
++  DW      LINEAR_CODE_SEL
++
+diff --git a/IntelFsp2Pkg/Library/SecFspSecPlatformLibNull/X64/SecCarInit.nasm b/IntelFsp2Pkg/Library/SecFspSecPlatformLibNull/X64/SecCarInit.nasm
+new file mode 100644
+index 0000000000..121f2b0c37
+--- /dev/null
++++ b/IntelFsp2Pkg/Library/SecFspSecPlatformLibNull/X64/SecCarInit.nasm
+@@ -0,0 +1,40 @@
++;; @file
++;  SEC CAR function
++;
++; Copyright (c) 2015, Intel Corporation. All rights reserved.<BR>
++; SPDX-License-Identifier: BSD-2-Clause-Patent
++;;
++
++;
++; Define assembler characteristics
++;
++
++%macro RET_ESI 0
++
++  movd    esi, mm7                      ; move ReturnAddress from MM7 to ESI
++  jmp     esi
++
++%endmacro
++
++SECTION .text
++
++;-----------------------------------------------------------------------------
++;
++;  Section:     SecCarInit
++;
++;  Description: This function initializes the Cache for Data, Stack, and Code
++;
++;-----------------------------------------------------------------------------
++global ASM_PFX(SecCarInit)
++ASM_PFX(SecCarInit):
++
++  ;
++  ; Set up CAR
++  ;
++
++  xor    eax, eax
++
++SecCarInitExit:
++
++  RET_ESI
++
+diff --git a/IntelFsp2Pkg/Tools/PatchFv.py b/IntelFsp2Pkg/Tools/PatchFv.py
+index c1594f1a96..06aac20eb2 100644
+--- a/IntelFsp2Pkg/Tools/PatchFv.py
++++ b/IntelFsp2Pkg/Tools/PatchFv.py
+@@ -248,6 +248,8 @@ class Symbols:
+ 
+         for fv in self.fvList:
+             self.dictVariable['_BASE_%s_' % fv['Name']] = fv['Base']
++            self.dictVariable['_OFFS_%s_' % fv['Name']] = fv['Offset']
++
+         #
+         # Search all MAP files in FFS directory if it exists then parse MOD MAP file
+         #
+@@ -371,6 +373,7 @@ class Symbols:
+                        modName = self.dictGuidNameXref[modName.upper()]
+                     self.dictModBase['%s:BASE'  % modName] = int (match.group(2), 16)
+                     self.dictModBase['%s:ENTRY' % modName] = int (match.group(3), 16)
++                    self.dictSymbolAddress["%s:BASE" % modName] = match.group(2)
+                 match = re.match("\(GUID=([A-Z0-9\-]+)\s+\.textbaseaddress=(0x[0-9a-fA-F]+)\s+\.databaseaddress=(0x[0-9a-fA-F]+)\)", rptLine)
+                 if match is not None:
+                     if foundModHdr:
+@@ -429,8 +432,8 @@ class Symbols:
+             prefix = ''
+         else:
+             #MSFT
+-            #0003:00000190       _gComBase                  00007a50     SerialPo
+-            patchMapFileMatchString =  "^\s[0-9a-fA-F]{4}:[0-9a-fA-F]{8}\s+(\w+)\s+([0-9a-fA-F]{8}\s+)"
++            #0003:00000190       _gComBase                     00007a50     SerialPort
++            patchMapFileMatchString =  "^\s[0-9a-fA-F]{4}:[0-9a-fA-F]{8}\s+(\w+)\s+([0-9a-fA-F]{8,16})\s+"
+             matchKeyGroupIndex = 1
+             matchSymbolGroupIndex  = 2
+             prefix = ''
+@@ -438,7 +441,10 @@ class Symbols:
+         for reportLine in reportLines:
+             match = re.match(patchMapFileMatchString, reportLine)
+             if match is not None:
+-                modSymbols[prefix + match.group(matchKeyGroupIndex)] = match.group(matchSymbolGroupIndex)
++                if prefix == '' and len(match.group(matchSymbolGroupIndex)) > 8:
++                    prefix = '_'
++                keyname = '%s' % (prefix + match.group(matchKeyGroupIndex))
++                modSymbols[keyname] = match.group(matchSymbolGroupIndex)
+ 
+         # Handle extra module patchable PCD variable in Linux map since it might have different format
+         # .data._gPcd_BinaryPatch_PcdVpdBaseAddress
+@@ -449,7 +455,7 @@ class Symbols:
+                 if handleNext:
+                     handleNext = False
+                     pcdName = match.group(1)
+-                    match   = re.match("\s+(0x[0-9a-fA-F]{16})\s+", reportLine)
++                    match   = re.match("\s+(0x[0-9a-fA-F]{8,16})\s+", reportLine)
+                     if match is not None:
+                         modSymbols[prefix + pcdName] = match.group(1)
+                 else:
+diff --git a/QemuFspPkg/FspmInit/FspmInit.c b/QemuFspPkg/FspmInit/FspmInit.c
+index 07a72dc19a..c16d001c01 100644
+--- a/QemuFspPkg/FspmInit/FspmInit.c
++++ b/QemuFspPkg/FspmInit/FspmInit.c
+@@ -124,11 +124,11 @@ ReportAndInstallNewFv (
+ 
+   FspInfoHeader = GetFspInfoHeaderFromApiContext();
+   if (FspInfoHeader->Signature != FSP_INFO_HEADER_SIGNATURE) {
+-    DEBUG ((DEBUG_ERROR, "The signature of FspInfoHeader getting from API context is invalid at 0x%08X.\n", (UINT32)FspInfoHeader));
++    DEBUG ((DEBUG_ERROR, "The signature of FspInfoHeader getting from API context is invalid at %p.\n", FspInfoHeader));
+     FspInfoHeader = GetFspInfoHeader();
+   }
+ 
+-  CurPtr = (UINT8 *)FspInfoHeader->ImageBase;
++  CurPtr = (UINT8 *)(UINTN)FspInfoHeader->ImageBase;
+   EndPtr = CurPtr + FspInfoHeader->ImageSize - 1;
+ 
+   while (CurPtr < EndPtr) {
+@@ -139,7 +139,7 @@ ReportAndInstallNewFv (
+     PeiServicesInstallFvInfoPpi (
+       NULL,
+       (VOID *)FvHeader,
+-      (UINTN) FvHeader->FvLength,
++      (UINT32)FvHeader->FvLength,
+       NULL,
+       NULL
+       );
+diff --git a/QemuFspPkg/FspmInit/FspmInit.inf b/QemuFspPkg/FspmInit/FspmInit.inf
+index fce0bc4ea7..5117ebc835 100644
+--- a/QemuFspPkg/FspmInit/FspmInit.inf
++++ b/QemuFspPkg/FspmInit/FspmInit.inf
+@@ -35,6 +35,8 @@
+   gEfiPeiMemoryDiscoveredPpiGuid            ## NOTIFY
+   gEfiPeiMasterBootModePpiGuid              ## PRODUCES
+   gEfiTemporaryRamSupportPpiGuid
++  gEfiTemporaryRamSupportPpiGuid
++  gFspInApiModePpiGuid
+ 
+ [Guids]
+   gFspReservedMemoryResourceHobGuid         ## CONSUMES
+diff --git a/QemuFspPkg/FspsInit/FspsInit.c b/QemuFspPkg/FspsInit/FspsInit.c
+index cd1024fea7..2a620a9f4b 100644
+--- a/QemuFspPkg/FspsInit/FspsInit.c
++++ b/QemuFspPkg/FspsInit/FspsInit.c
+@@ -74,7 +74,7 @@ FspGfxInitCallback (
+   /// Call PeiGraphicsPpi.GraphicsPpiInit to initilize the display
+   ///
+   DEBUG ((DEBUG_INFO, "GraphicsPpiInit Start\n"));
+-  Status = GfxInitPpi->GraphicsPpiInit ((VOID *)FspsUpd->FspsConfig.GraphicsConfigPtr);
++  Status = GfxInitPpi->GraphicsPpiInit ((VOID *)(UINTN)FspsUpd->FspsConfig.GraphicsConfigPtr);
+   if (EFI_ERROR (Status)) {
+     DEBUG ((DEBUG_ERROR, "GraphicsPpiInit failed. \n"));
+   }
+@@ -222,7 +222,7 @@ FspsInitEntryPoint (
+     //
+     // Use the UpdRegion as default
+     //
+-    FspsUpd = (FSPS_UPD *) (FspInfoHeader->ImageBase + FspInfoHeader->CfgRegionOffset);
++    FspsUpd = (FSPS_UPD *)(UINTN)(FspInfoHeader->ImageBase + FspInfoHeader->CfgRegionOffset);
+   }
+   SetFspSiliconInitUpdDataPointer (FspsUpd);
+ 
+diff --git a/QemuFspPkg/Library/PlatformSecLib/Vtf0PlatformSecTLib.inf b/QemuFspPkg/Library/PlatformSecLib/Vtf0PlatformSecTLib.inf
+index 2f80ba02d2..75f021b115 100644
+--- a/QemuFspPkg/Library/PlatformSecLib/Vtf0PlatformSecTLib.inf
++++ b/QemuFspPkg/Library/PlatformSecLib/Vtf0PlatformSecTLib.inf
+@@ -45,6 +45,9 @@
+ [Sources.IA32]
+   Ia32/SecEntry.nasm
+ 
++[Sources.X64]
++  X64/SecEntry.nasm
++
+ ################################################################################
+ #
+ # Package Dependency Section - list of Package files that are required for
+diff --git a/QemuFspPkg/Library/PlatformSecLib/X64/Chipset.inc b/QemuFspPkg/Library/PlatformSecLib/X64/Chipset.inc
+new file mode 100644
+index 0000000000..7f0617b083
+--- /dev/null
++++ b/QemuFspPkg/Library/PlatformSecLib/X64/Chipset.inc
+@@ -0,0 +1,119 @@
++;; @file
++; Chipset constants and macros
++;
++; Copyright (c) 2017-2018 Intel Corporation.
++;
++; This program and the accompanying materials
++; are licensed and made available under the terms and conditions of the BSD License
++; which accompanies this distribution.  The full text of the license may be found at
++; http://opensource.org/licenses/bsd-license.php
++;
++; THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
++; WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
++;
++;------------------------------------------------------------------------------
++;;
++
++;
++; APIC register
++;
++APICID                        EQU 0FEE00020h
++
++;
++; base addresses and register definitions.
++;
++
++B_ACPI_BASE_EN      EQU BIT1
++  R_ACPI_PM1_CNT          EQU 004h
++  V_ACPI_PM1_CNT_S5       EQU 01C00h
++  R_ACPI_PM1_TMR          EQU 008h
++  R_TCO_STS               EQU 064h
++  B_TCO_STS_SECOND_TO     EQU BIT17
++  R_TCO_CNT               EQU 068h
++  B_TCO_CNT_TMR_HLT       EQU BIT11
++
++  B_SMBUS_PCICMD_IOSE     EQU BIT0
++  R_SMBUS_AUXC            EQU 00Dh
++
++ACPI_BASE_ADDRESS         EQU 0400h
++SPI_BASE_ADDRESS          EQU 0FED01000h
++;  B_LPC_SPI_BASE_EN       EQU BIT1
++  R_SPI_BCR               EQU 0DCh
++  R_PMC_GEN_PMCON_1       EQU 01020h
++  R_PMC_PMIR              EQU 01048h
++  B_PMC_PMIR_CF9GR        EQU BIT20
++
++  B_LPC_PUNIT_BASE_EN     EQU BIT1
++
++  B_LPC_ILB_BASE_EN       EQU BIT1
++
++  B_LPC_RCBA_EN           EQU BIT0
++
++  B_LPC_IO_BASE_EN        EQU BIT1
++
++  B_LPC_MPHY_BASE_EN      EQU BIT1
++
++MCH_BASE_ADDRESS              EQU 0FED10000h
++  B_MCH_BASE_ADDRESS_EN       EQU BIT0
++
++;
++;B_Unit Registers
++;
++BUNIT_BMISC                   EQU 6800h
++  B_BMISC_RESDRAM             EQU 01h   ;Bit 0 - When this bit is set, reads targeting E-segment are routed to DRAM.
++  B_BMISC_RFSDRAM             EQU 02h   ;Bit 1 - When this bit is set, reads targeting F-segment are routed to DRAM.
++
++;
++; HPET compare register
++;
++HPET_COMP_1                   EQU 0FED00108h
++HPET_COMP_2                   EQU 0FED0010Ch
++HPET_COMP_3                   EQU 0FED00128h
++HPET_COMP_4                   EQU 0FED00148h
++HPTC_AE                       EQU BIT7
++;
++; MCH PCIe base address
++;
++CPU_HEC_SIZE                  EQU 000000000h      ; 256M
++CPU_HEC_EN                    EQU 000000001h      ; Enable
++CPU0_HEC_PCI_ADDR             EQU 080FF0150h
++CPU1_HEC_PCI_ADDR             EQU 080FE0150h
++CPU_HEC_BASE                  EQU 0E0000000h
++
++;
++; PCI registers
++;
++R_MCH_BASE                EQU (( 0h * 8 + 00h) * 1000h + 0048h)
++R_LPC_ACPI_BASE           EQU ((1Fh * 8 + 00h) * 1000h + 0040h)
++R_LPC_PMC_BASE            EQU ((1Fh * 8 + 00h) * 1000h + 0044h)
++R_LPC_IO_BASE             EQU ((1Fh * 8 + 00h) * 1000h + 004Ch)
++R_LPC_ILB_BASE            EQU ((1Fh * 8 + 00h) * 1000h + 0050h)
++R_LPC_SPI_BASE            EQU ((1Fh * 8 + 00h) * 1000h + 0054h)
++R_LPC_MPHY_BASE           EQU ((1Fh * 8 + 00h) * 1000h + 0058h)
++R_LPC_PUNIT_BASE          EQU ((1Fh * 8 + 00h) * 1000h + 005Ch)
++R_LPC_RCBA                EQU ((1Fh * 8 + 00h) * 1000h + 00F0h)
++R_SMBUS_CMD               EQU ((1Fh * 8 + 03h) * 1000h + 0004h)
++R_SMBUS_BASE              EQU ((1Fh * 8 + 03h) * 1000h + 0020h)
++R_P2SB_PCI_CMD            EQU ((0Dh * 8 + 00h) * 1000h + 0004h)
++R_P2SB_MMIO_BAR0          EQU ((0Dh * 8 + 00h) * 1000h + 0010h)
++R_P2SB_HPTC               EQU ((0Dh * 8 + 00h) * 1000h + 0060h)  ;HPTC config register. B0:D13:F0 0x60x
++R_PMC_PCI_CMD             EQU ((0Dh * 8 + 01h) * 1000h + 0004h)
++R_PMC_ACPI_BASE           EQU ((0Dh * 8 + 01h) * 1000h + 0020h)  ;BAR2 IO config register. B0:D13:F1 0x20
++R_PMC_MMIO_BAR0           EQU ((0Dh * 8 + 01h) * 1000h + 0010h)  ;BAR0 IO config register. B0:D13:F1 0x10
++R_PMC_MMIO_BAR1           EQU ((0Dh * 8 + 01h) * 1000h + 0018h)  ;BAR1 IO config register. B0:D13:F1 0x18
++
++SYRE_CPURST                   EQU 14
++
++;
++; PCIEXBAR constants for enable in bit [0]
++;
++ENABLE                        EQU 1
++
++;
++; PCIEXBAR constants for size in bit [2:1]
++;
++PCIEXBAR_64MB                 EQU 010b
++PCIEXBAR_128MB                EQU 001b
++PCIEXBAR_256MB                EQU 000b
++
++MMCFG_BASE                    EQU CPU_HEC_BASE    ; 4GB-128MB
+diff --git a/QemuFspPkg/Library/PlatformSecLib/X64/Ia32Nasm.inc b/QemuFspPkg/Library/PlatformSecLib/X64/Ia32Nasm.inc
+new file mode 100644
+index 0000000000..eab7382ed4
+--- /dev/null
++++ b/QemuFspPkg/Library/PlatformSecLib/X64/Ia32Nasm.inc
+@@ -0,0 +1,169 @@
++;; @file
++; IA32 architecture MSRs
++;
++; Copyright (c) 2017-2018 Intel Corporation.
++;
++; This program and the accompanying materials
++; are licensed and made available under the terms and conditions of the BSD License
++; which accompanies this distribution.  The full text of the license may be found at
++; http://opensource.org/licenses/bsd-license.php
++;
++; THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
++; WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
++;
++;------------------------------------------------------------------------------
++;;
++
++;
++; WSM CPUID vs. stepping
++;
++%define WSM_A0_STEPPING 0x206C0
++%define IA32_MTRR_CAP 0xFE
++%define MTRR_PHYS_BASE_0 0x200
++%define MTRR_PHYS_MASK_0 0x201
++%define MTRR_PHYS_BASE_1 0x202
++%define MTRR_PHYS_MASK_1 0x203
++%define MTRR_PHYS_BASE_2 0x204
++%define MTRR_PHYS_MASK_2 0x205
++%define MTRR_PHYS_BASE_3 0x206
++%define MTRR_PHYS_MASK_3 0x207
++%define MTRR_PHYS_BASE_4 0x208
++%define MTRR_PHYS_MASK_4 0x209
++%define MTRR_PHYS_BASE_5 0x20A
++%define MTRR_PHYS_MASK_5 0x20B
++%define MTRR_PHYS_BASE_6 0x20C
++%define MTRR_PHYS_MASK_6 0x20D
++%define MTRR_PHYS_BASE_7 0x20E
++%define MTRR_PHYS_MASK_7 0x20F
++%define MTRR_PHYS_BASE_8 0x210
++%define MTRR_PHYS_MASK_8 0x211
++%define MTRR_PHYS_BASE_9 0x212
++%define MTRR_PHYS_MASK_9 0x213
++%define MTRR_FIX_64K_00000 0x250
++%define MTRR_FIX_16K_80000 0x258
++%define MTRR_FIX_16K_A0000 0x259
++%define MTRR_FIX_4K_C0000 0x268
++%define MTRR_FIX_4K_C8000 0x269
++%define MTRR_FIX_4K_D0000 0x26A
++%define MTRR_FIX_4K_D8000 0x26B
++%define MTRR_FIX_4K_E0000 0x26C
++%define MTRR_FIX_4K_E8000 0x26D
++%define MTRR_FIX_4K_F0000 0x26E
++%define MTRR_FIX_4K_F8000 0x26F
++%define MTRR_DEF_TYPE 0x2FF
++
++%define MTRR_MEMORY_TYPE_UC 0x0
++%define MTRR_MEMORY_TYPE_WC 0x1
++%define MTRR_MEMORY_TYPE_WT 0x4
++%define MTRR_MEMORY_TYPE_WP 0x5
++%define MTRR_MEMORY_TYPE_WB 0x6
++
++%define MTRR_DEF_TYPE_E 0x800
++%define MTRR_DEF_TYPE_FE 0x400
++%define MTRR_PHYSMASK_VALID 0x800
++
++;
++; Define the high 32 bits of MTRR masking
++; This should be read from CPUID EAX = 080000008h, EAX bits [7:0]
++; But for most platforms this will be a fixed supported size so it is
++; fixed to save space.
++;
++%define MTRR_PHYS_MASK_VALID 0x800
++%define MTRR_PHYS_MASK_HIGH 0xF      ; For 36 bit addressing
++;MTRR_PHYS_MASK_HIGH           EQU 0000000FFh      ; For 40 bit addressing
++
++%define IA32_MISC_ENABLE 0x1A0
++%define FAST_STRING_ENABLE_BIT 0x1
++
++%define CR0_CACHE_DISABLE 0x40000000
++%define CR0_NO_WRITE 0x20000000
++
++%define IA32_PLATFORM_ID 0x17
++%define IA32_BIOS_UPDT_TRIG 0x79
++%define IA32_BIOS_SIGN_ID 0x8B
++%define PLATFORM_INFO 0xCE
++%define NO_EVICT_MODE 0x2E0
++%define NO_EVICTION_ENABLE_BIT 0x1
++
++;
++; MSR definitions
++;
++%define MSR_IA32_PLATFORM_ID 0x17
++%define MSR_APIC_BASE 0x1B
++%define MSR_SOCKET_ID 0x39
++%define MSR_IA32_FEATURE_CONTROL 0x3A
++%define MSR_CLOCK_CST_CONFIG_CONTROL 0xE2
++%define MSR_CLOCK_FLEX_MAX 0x194
++%define MSR_IA32_PERF_STS 0x198
++%define MSR_IA32_PERF_CTL 0x199
++%define MSR_IA32_MISC_ENABLES 0x1A0
++%define MSR_IA32_MC8_MISC2 0x288
++%define MSR_IA32_MC7_CTL 0x41C
++
++;
++; CSR definitions
++;
++%define CSR_DESIRED_CORES 0x80            ; D0:F0:R80h
++%define CSR_DESIRED_CORES_LOCK_BIT 16
++%define CSR_DESIRED_CORES_SMT_BIT 8
++%define CSR_DESIRED_CORES_COUNT_MASK 7
++%define CSR_DESIRED_SMT_CORE_COUNT_MASK 0x107
++
++%define CSR_DESIRED_CORES_HT_DISABLED_BIT 0xFFFFF100
++%define CSR_DESIRED_CORES_MC_DISABLED_BIT 0xFFFC
++%define CSR_DESIRED_CORES_HT_DISABLED 0x100
++%define CSR_DESIRED_CORES_MC_DISABLED 0x1
++
++%define CSR_SVID_SDID 0x2C            ; D0:F0:R2Ch
++%define DEAFULT_SVID_SDID 0x80868086       ; DWORD Access & Write Once ONLY
++
++;
++; Processor MSR definitions
++;
++%define MSR_BBL_CR_CTL3 0x11E ; L2 cache configuration MSR
++%define B_MSR_BBL_CR_CTL3_L2_NOT_PRESENT 23    ; L2 not present
++%define B_MSR_BBL_CR_CTL3_L2_ENABLED 8    ; L2 enabled
++%define B_MSR_BBL_CR_CTL3_L2_HARDWARE_ENABLED 0    ; L2 hardware enabled
++
++%define P6RatioBitsMask 0x1F  ; Bitmask for cpu ratio
++%define P6_FREQ_LOCKED_BIT 15d
++
++;
++; Local APIC Register Equates
++;
++%define LOCAL_APIC_ID_REG 0xFEE00020
++%define APIC_ICR_HI 0xFEE00310
++%define APIC_ICR_LO 0xFEE00300
++%define ANDICRMask 0xFFF32000      ; AND mask for ICR Saving reserved bits
++%define ORSelfINIT 0x4500      ; OR mask to send INIT IPI to itself
++%define ORAllButSelf 0xC0000      ; OR mask to set dest field = "All But Self"
++
++;
++; Cache control macro
++;
++%macro DISABLE_CACHE 0
++    mov   eax, cr0
++    or    eax, CR0_CACHE_DISABLE + CR0_NO_WRITE
++    wbinvd
++    mov   cr0, eax
++%endmacro
++
++%macro ENABLE_CACHE 0
++    mov   eax, cr0
++    and   eax, ~ (CR0_CACHE_DISABLE + CR0_NO_WRITE)
++    wbinvd
++    mov   cr0, eax
++%endmacro
++
++%define VENDOR_ID_REG 0
++%define PCI_REVISION_ID_REG 8
++%define CPU_GENERIC_UNCORE_DEV 0
++%define CPU_GENERIC_UNCORE_FUNC 0
++%define CPU_LINK_1_DEV 2
++%define CPU_LINK_1_FUNC 4
++
++%define B0_CPU_STEPPING 0x10
++
++%define BLOCK_LENGTH_BYTES 2048
++
++
+diff --git a/QemuFspPkg/Library/PlatformSecLib/X64/PlatformNasm.inc b/QemuFspPkg/Library/PlatformSecLib/X64/PlatformNasm.inc
+new file mode 100644
+index 0000000000..4cddefcfd8
+--- /dev/null
++++ b/QemuFspPkg/Library/PlatformSecLib/X64/PlatformNasm.inc
+@@ -0,0 +1,143 @@
++;; @file
++; Provide macro for QEMU CAR initialization
++;
++; Copyright (c) 2017-2018 Intel Corporation.
++;
++; This program and the accompanying materials
++; are licensed and made available under the terms and conditions of the BSD License
++; which accompanies this distribution.  The full text of the license may be found at
++; http://opensource.org/licenses/bsd-license.php
++;
++; THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
++; WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
++;
++;------------------------------------------------------------------------------
++;;
++
++
++;INCLUDE FlashMap.inc ;ECP porting
++
++MKF_SOFTSDV_FLAG              EQU   0
++
++; Set "MINIMUM_BOOT_SUPPORT" flag allows BIOS boot as minimum feature in SEC phase.
++MINIMUM_BOOT_SUPPORT          EQU 0               ; ="0", Normal Boot;
++                                                  ; ="1", Minimum Feature Boot
++; "RESET_IN_SEC" flag allows BIOS doing RESET in SEC phase
++RESET_IN_SEC                  EQU 0               ; ="0", RESET occurs in OemIohInit.c
++                                                  ; ="1", RESET occurs in SEC phase
++
++EARLY_MICROCODE_SUPPORT       EQU 1
++DETERMINISTIC_BSP_SUPPORT     EQU 0
++DEBUG                         EQU 1
++
++;
++; IO port to access the upper 128-byte of RTC RAM
++;
++RTC_UPPER_INDEX               EQU 072h
++RTC_UPPER_DATA                EQU 073h
++
++;
++; Offset of data stored in the upper 128-byte of RTC RAM.
++;
++CMOS_CPU_BSP_SELECT           EQU 010h            ; BspSelection
++CMOS_CPU_UP_MODE              EQU 011h            ; UpBootSelection
++
++;
++; Cpu Ratio and Vid stored in the upper 128-byte of RTC RAM.
++;
++CMOS_CPU_RATIO_OFFSET         EQU 012h            ; ProcessorFlexibleRatio
++CMOS_CPU_CORE_HT_OFFSET       EQU 013h            ; ProcessorHyperThreadingEnable & EnableCoresInSbsp & EnableCoresInNbsp
++
++;
++; CPU Feature
++;
++CMOS_CPU_BIST_OFFSET          EQU 015h            ; ProcessorBistEnable
++CMOS_CPU_VMX_OFFSET           EQU 016h            ; ProcessorVmxEnable
++
++;
++; Port80 Selection
++;
++CMOS_PORT80_OFFSET            EQU 017h            ; Port80Route
++
++;
++;Flash layout map
++;
++;PEICODE_REGION_BASE_ADDRESS   EQU ASM_PFX(FLASH_BASE)
++;PEICODE_REGION_SIZE           EQU ASM_PFX(FLASH_SIZE)
++;PEICODE_REGION_SIZE_MASK      EQU (~ (PEICODE_REGION_SIZE - 1))
++
++BIOS_REGION_UPDATABLE_STATUS  EQU 0058h            ; Offset
++;----------------------------------------------------------------------------------------
++; "Merlin" support used equates
++;----------------------------------------------------------------------------------------
++MAGIC_ADDRESS_IN_SEG          EQU  0FFF0h
++MAGIC_SEG                     EQU  0F000h
++
++;
++; -- Equates for CAR initialization
++;    TileSize (must be a power of 2)
++;
++; Define the tile size
++; The tile size and tile placement are critical to ensuring that no data loss occurs
++; See BWG - chapter "Determining Tile Size"
++;
++TILE_SIZE                     EQU 000000000h
++
++;
++; See BWG - chapter "Determining Cacheable Code Region Base Addresses and Ranges".
++;
++; Now FvRecovery base address and size is determined by PcdFlashFvIBBMBase and PcdFlashFvIBBMSize.
++;
++
++WDB_REGION_BASE_ADDRESS             EQU 040000000h
++WDB_REGION_SIZE                     EQU 01000h
++WDB_REGION_SIZE_MASK                EQU (~ (WDB_REGION_SIZE - 1))
++
++;
++; See BWG - chapter "Determining Data Stack Base Address and Range"
++;
++; Now Data Stack base address and size is determined by PcdTemporaryRamBase and PcdTemporaryRamSize.
++;
++
++;
++; Cache init and test values
++; These are inverted to flip each bit at least once
++;
++CACHE_INIT_VALUE              EQU 0A5A5A5A5h
++
++;ECP porting
++;CACHE_TEST_VALUE             EQU (NOT CACHE_INIT_VALUE)
++CACHE_TEST_VALUE              EQU 05aa55aa5h
++
++PEI_CORE_ENTRY_BASE           EQU 0FFFFFFE0h
++FV_MAIN_BASE                  EQU 0FFFFFFFCh
++
++MAX_NR_BUS                    EQU 0FFh
++MAX_NR_CPU_SOCKETS            EQU 2               ; DP example, MP may have 4 or more
++
++BIT0                          EQU 01h
++BIT1                          EQU 02h
++BIT2                          EQU 04h
++BIT3                          EQU 08h
++BIT4                          EQU 10h
++BIT5                          EQU 20h
++BIT6                          EQU 40h
++BIT7                          EQU 80h
++BIT8                          EQU 100h
++BIT9                          EQU 200h
++BIT10                         EQU 400h
++BIT11                         EQU 800h
++BIT12                         EQU 1000h
++BIT13                         EQU 2000h
++BIT14                         EQU 4000h
++BIT15                         EQU 8000h
++BIT16                         EQU 10000h
++BIT17                         EQU 20000h
++BIT18                         EQU 40000h
++BIT19                         EQU 80000h
++BIT20                         EQU 0100000h
++BIT23                         EQU 0800000h
++BIT31                         EQU 080000000h
++; Bit definition in MM1
++;BadCMOSDetected               EQU (BIT0 shl 17)
++BSPApicIDSaveStart            EQU 24
+diff --git a/QemuFspPkg/Library/PlatformSecLib/X64/SecCoreNasm.inc b/QemuFspPkg/Library/PlatformSecLib/X64/SecCoreNasm.inc
+new file mode 100644
+index 0000000000..33ba7ef64b
+--- /dev/null
++++ b/QemuFspPkg/Library/PlatformSecLib/X64/SecCoreNasm.inc
+@@ -0,0 +1,61 @@
++;; @file
++; Provide macro for QEMU CAR initialization
++;
++; Copyright (c) 2017-2018 Intel Corporation.
++;
++; This program and the accompanying materials
++; are licensed and made available under the terms and conditions of the BSD License
++; which accompanies this distribution.  The full text of the license may be found at
++; http://opensource.org/licenses/bsd-license.php
++;
++; THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
++; WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
++;
++;------------------------------------------------------------------------------
++;;
++
++;
++; Set to 1 to enable debug
++;
++NO_EVICTION_MODE_DEBUG  EQU     1
++
++;
++;args 1: Status
++;
++%macro STATUS_CODE 1
++%if NO_EVICTION_MODE_DEBUG
++                    mov  al, %1
++                    out  080h, al
++%endif
++%endmacro
++
++%macro STATUS_CODE2 1
++                    mov  al, %1
++                    out  080h, al
++%endmacro
++
++FVHEADER_LEN_OFF    EQU 30h
++FFSHEADER_LEN       EQU 18h
++
++IMAGE_BASE_ADDRESS  EQU 0FFFF0000h
++
++;
++; Set to 1 to enable debug support for "Deterministic BSP selection"
++;
++AP_ENTRY_DELAY      EQU         10h
++AP_EXECUTION_DELAY  EQU         1000h
++
++;
++; Define the segment used for AP start-up
++; It should be on the top of the recovery FV
++; Seg  = 0100h - (BlockNumber of Recovery FV)
++; Here 0FCh = 0100h - 04h
++;
++AP_SEG                      EQU   0FFh
++
++;
++; Commands defined in the AP SIPI code
++;
++AP_SIPI_COLLECT_MAX_RATIO   EQU   001h
++AP_SIPI_PROGRAM_MAX_RATIO   EQU   002h
++AP_SIPI_SWITCH_BSP          EQU   003h
+diff --git a/QemuFspPkg/Library/PlatformSecLib/X64/SecEntry.nasm b/QemuFspPkg/Library/PlatformSecLib/X64/SecEntry.nasm
+new file mode 100644
+index 0000000000..5a869c4aaf
+--- /dev/null
++++ b/QemuFspPkg/Library/PlatformSecLib/X64/SecEntry.nasm
+@@ -0,0 +1,41 @@
++;; @file
++; This is the code that initializes CAR mode for QEMU.
++;
++; Copyright (c) 2017-2018 Intel Corporation.
++;
++; This program and the accompanying materials
++; are licensed and made available under the terms and conditions of the BSD License
++; which accompanies this distribution.  The full text of the license may be found at
++; http://opensource.org/licenses/bsd-license.php
++;
++; THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
++; WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
++;
++;------------------------------------------------------------------------------
++;;
++
++    SECTION .text
++
++BITS     32
++
++;_TEXT_PROTECTED_MODE      SEGMENT PARA PUBLIC USE32 'CODE'
++;ASSUME  CS:_TEXT_PROTECTED_MODE, DS:_TEXT_PROTECTED_MODE
++
++align 4
++global ASM_PFX(ProtectedModeSECStart)
++ASM_PFX(ProtectedModeSECStart):
++  jmp     $
++
++global ASM_PFX(SecPlatformInit)
++ASM_PFX(SecPlatformInit):
++  jmp     $
++
++global ASM_PFX(SecCarInit)
++ASM_PFX(SecCarInit):
++  ;
++  ; After memory initialization is complete, please follow the algorithm in the BIOS
++  ; Writer's Guide to properly transition to a normal system configuration.
++  ; The algorithm covers the required sequence to properly exit this mode.
++  ;
++  jmp    $
++
+diff --git a/QemuFspPkg/QemuFspPkg.dsc b/QemuFspPkg/QemuFspPkg.dsc
+index 4c066d392f..d216b78b58 100644
+--- a/QemuFspPkg/QemuFspPkg.dsc
++++ b/QemuFspPkg/QemuFspPkg.dsc
+@@ -39,7 +39,7 @@
+   PLATFORM_VERSION               = 0.1
+   DSC_SPECIFICATION              = 0x00010005
+   OUTPUT_DIRECTORY               = Build/QemuFspPkg
+-  SUPPORTED_ARCHITECTURES        = IA32
++  SUPPORTED_ARCHITECTURES        = IA32|X64
+   BUILD_TARGETS                  = DEBUG|RELEASE
+   SKUID_IDENTIFIER               = DEFAULT
+   FLASH_DEFINITION               = QemuFspPkg/QemuFspPkg.fdf
+@@ -366,6 +366,11 @@
+ #       generated for it, but the binary will not be put into any firmware volume.
+ #
+ ###################################################################################################
++[Components]
++  #
++  # FSP Binary Components
++  #
++  $(FSP_PACKAGE)/FspHeader/FspHeader.inf
+ 
+ [Components.IA32]
+   #
+@@ -376,6 +381,7 @@
+       FspSecPlatformLib|$(FSP_PACKAGE)/Library/PlatformSecLib/Vtf0PlatformSecTLib.inf
+   }
+ 
++[Components.X64]
+   IntelFsp2Pkg/FspSecCore/FspSecCoreM.inf {
+     <LibraryClasses>
+       FspSecPlatformLib|$(FSP_PACKAGE)/Library/PlatformSecLib/Vtf0PlatformSecMLib.inf
+@@ -400,10 +406,6 @@
+       PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
+   }
+ 
+-  #
+-  # FSP Binary Components
+-  #
+-  $(FSP_PACKAGE)/FspHeader/FspHeader.inf
+   $(FSP_PACKAGE)/FspmInit/FspmInit.inf
+   $(FSP_PACKAGE)/FspsInit/FspsInit.inf
+   $(FSP_PACKAGE)/QemuVideo/QemuVideo.inf
+@@ -432,4 +434,3 @@
+   *_GCC5_IA32_DLINK_FLAGS = -no-pie
+   *_GCC5_IA32_ASLCC_FLAGS = -fno-pic
+   *_GCC5_IA32_ASLDLINK_FLAGS = -no-pie
+-  *_XCODE5_IA32_CC_FLAGS = -flto
+diff --git a/QemuFspPkg/QemuFspPkg.fdf b/QemuFspPkg/QemuFspPkg.fdf
+index 7ab51f9d1b..b483099e9d 100644
+--- a/QemuFspPkg/QemuFspPkg.fdf
++++ b/QemuFspPkg/QemuFspPkg.fdf
+@@ -20,8 +20,8 @@ DEFINE FLASH_BLOCK_SIZE     = 0x00000100
+ #
+ # Flash Size for Visual Studio and GCC
+ #
+-DEFINE FLASH_SIZE           = 0x0003A000
+-DEFINE FLASH_NUM_BLOCKS     = 0x3A0          #The number of blocks
++DEFINE FLASH_SIZE           = 0x00038000
++DEFINE FLASH_NUM_BLOCKS     = 0x380          #The number of blocks
+ 
+ SET gQemuFspPkgTokenSpaceGuid.PcdFlashFvFspsBase  = 0x00000000
+ SET gQemuFspPkgTokenSpaceGuid.PcdFlashFvFspsSize  = 0x00015000
+@@ -30,7 +30,7 @@ SET gQemuFspPkgTokenSpaceGuid.PcdFlashFvFspmBase  = 0x00015000
+ SET gQemuFspPkgTokenSpaceGuid.PcdFlashFvFspmSize  = 0x00022000
+ 
+ SET gQemuFspPkgTokenSpaceGuid.PcdFlashFvFsptBase  = 0x00037000
+-SET gQemuFspPkgTokenSpaceGuid.PcdFlashFvFsptSize  = 0x00003000
++SET gQemuFspPkgTokenSpaceGuid.PcdFlashFvFsptSize  = 0x00001000
+ 
+ ################################################################################
+ #
+@@ -106,18 +106,16 @@ FvNameGuid         = 52F1AFB6-78A6-448f-8274-F370549AC5D0
+ #
+ # FSP header
+ #
+-INF  RuleOverride = FSPHEADER   $(FSP_PACKAGE)/FspHeader/FspHeader.inf
++INF  RuleOverride = FSPHEADER USE = IA32 $(FSP_PACKAGE)/FspHeader/FspHeader.inf
+ 
+ #
+ # Project specific configuration data files
+ #
+-!ifndef $(CFG_PREBUILD)
+ FILE RAW = $(FSP_T_UPD_FFS_GUID) {
+     SECTION RAW = $(OUTPUT_DIRECTORY)/$(TARGET)_$(TOOL_CHAIN_TAG)/FV/$(FSP_T_UPD_TOOL_GUID).bin
+ }
+-!endif
+ 
+-INF RuleOverride = RELOC   IntelFsp2Pkg/FspSecCore/FspSecCoreT.inf
++INF RuleOverride = RELOC  USE = IA32 IntelFsp2Pkg/FspSecCore/FspSecCoreT.inf
+ 
+ [FV.FSP-M]
+ BlockSize          = $(FLASH_BLOCK_SIZE)
+@@ -142,30 +140,28 @@ FvNameGuid         = F32DB7DF-C5BC-423c-9416-08F1FA26A282
+ #
+ # FSP header
+ #
+-INF  RuleOverride = FSPHEADER   $(FSP_PACKAGE)/FspHeader/FspHeader.inf
++INF  RuleOverride = FSPHEADER  USE = IA32 $(FSP_PACKAGE)/FspHeader/FspHeader.inf
+ 
+ #
+ # Project specific configuration data files
+ #
+-!ifndef $(CFG_PREBUILD)
+ FILE RAW = $(FSP_M_UPD_FFS_GUID) {
+     SECTION RAW = $(OUTPUT_DIRECTORY)/$(TARGET)_$(TOOL_CHAIN_TAG)/FV/$(FSP_M_UPD_TOOL_GUID).bin
+ }
+-!endif
+ 
+ #
+ # It is important to keep the proper order for these PEIMs
+ # for this implementation
+ #
+-INF RuleOverride = RELOC   IntelFsp2Pkg/FspSecCore/FspSecCoreM.inf
++INF RuleOverride = RELOC  IntelFsp2Pkg/FspSecCore/FspSecCoreM.inf
+ 
+-INF MdeModulePkg/Core/Pei/PeiMain.inf
+-INF MdeModulePkg/Universal/PCD/Pei/Pcd.inf
++INF USE = X64 MdeModulePkg/Core/Pei/PeiMain.inf
++INF USE = X64 MdeModulePkg/Universal/PCD/Pei/Pcd.inf
+ 
+ #
+ # Project specific PEIMs
+ #
+-INF $(FSP_PACKAGE)/FspmInit/FspmInit.inf
++INF USE = X64 $(FSP_PACKAGE)/FspmInit/FspmInit.inf
+ 
+ #
+ # Description file
+@@ -198,27 +194,24 @@ FvNameGuid         = 1B5C27FE-F01C-4fbc-AEAE-341B2E992A17
+ #
+ # FSP header
+ #
+-INF RuleOverride = FSPHEADER   $(FSP_PACKAGE)/FspHeader/FspHeader.inf
++INF RuleOverride = FSPHEADER USE = IA32 $(FSP_PACKAGE)/FspHeader/FspHeader.inf
+ 
+ #
+ # Project specific configuration data files
+ #
+-!ifndef $(CFG_PREBUILD)
+ FILE RAW = $(FSP_S_UPD_FFS_GUID) {
+     SECTION RAW = $(OUTPUT_DIRECTORY)/$(TARGET)_$(TOOL_CHAIN_TAG)/FV/$(FSP_S_UPD_TOOL_GUID).bin
+ }
+-!endif
+ 
+ #
+ # It is important to keep the proper order for these PEIMs
+ # for this implementation
+ #
+-INF RuleOverride = RELOC   IntelFsp2Pkg/FspSecCore/FspSecCoreS.inf
+-
+-INF MdeModulePkg/Core/DxeIplPeim/DxeIpl.inf
+-INF RuleOverride = PE32  $(FSP_PACKAGE)/FspsInit/FspsInit.inf
+-INF RuleOverride = PE32  $(FSP_PACKAGE)/QemuVideo/QemuVideo.inf
+-INF RuleOverride = PE32    IntelFsp2Pkg/FspNotifyPhase/FspNotifyPhasePeim.inf
++INF RuleOverride = RELOC  USE = X64  IntelFsp2Pkg/FspSecCore/FspSecCoreS.inf
++INF                       USE = X64 MdeModulePkg/Core/DxeIplPeim/DxeIpl.inf
++INF RuleOverride = PE32   USE = X64   $(FSP_PACKAGE)/FspsInit/FspsInit.inf
++INF RuleOverride = PE32   USE = X64   $(FSP_PACKAGE)/QemuVideo/QemuVideo.inf
++INF RuleOverride = PE32   USE = X64   IntelFsp2Pkg/FspNotifyPhase/FspNotifyPhasePeim.inf
+ 
+ 
+ [Rule.Common.SEC]
+diff --git a/QemuFspPkg/QemuVideo/QemuVideo.c b/QemuFspPkg/QemuVideo/QemuVideo.c
+index acf84a670b..72122025f7 100644
+--- a/QemuFspPkg/QemuVideo/QemuVideo.c
++++ b/QemuFspPkg/QemuVideo/QemuVideo.c
+@@ -469,7 +469,7 @@ CallPpiAndFillFrameBuffer (
+   PlatformGraphicsOutput->GraphicsMode.PixelInformation     = Mode->Info->PixelInformation;
+   PlatformGraphicsOutput->GraphicsMode.PixelsPerScanLine    = Mode->Info->PixelsPerScanLine;
+   PlatformGraphicsOutput->FrameBufferBase                   = Mode->FrameBufferBase;
+-  PlatformGraphicsOutput->FrameBufferSize                   = Mode->FrameBufferSize;
++  PlatformGraphicsOutput->FrameBufferSize                   = (UINT32)Mode->FrameBufferSize;
+ 
+   ///
+   /// Display Logo if user provides valid Bmp image
+@@ -510,7 +510,7 @@ PeiGraphicsEntryPoint (
+   UINT32         ResY;
+ 
+   FspsUpd = (FSPS_UPD *)GetFspSiliconInitUpdDataPointer();
+-  GfxPtr  = (GRAPHICS_DATA *)FspsUpd->FspsConfig.GraphicsConfigPtr;
++  GfxPtr  = (GRAPHICS_DATA *)(UINTN)FspsUpd->FspsConfig.GraphicsConfigPtr;
+ 
+   if (!(GfxPtr && (GfxPtr->Signature == GRAPHICS_DATA_SIG))) {
+     DEBUG ((DEBUG_INFO, "NO valid graphics config data found!\n"));
+@@ -718,9 +718,9 @@ QemuPeiGraphicsInit (
+ 
+   BochsInitMode ((UINT16)ResX, (UINT16)ResY, BPP, FspsUpd->FspsConfig.PciTempResourceBase);
+ 
+-  GfxCfg.LogoPtr           = (VOID *)FspsUpd->FspsConfig.LogoPtr;
++  GfxCfg.LogoPtr           = (VOID *)(UINTN)FspsUpd->FspsConfig.LogoPtr;
+   GfxCfg.LogoSize          = FspsUpd->FspsConfig.LogoSize;
+-  GfxCfg.GraphicsConfigPtr = (VOID *)FspsUpd->FspsConfig.GraphicsConfigPtr;
++  GfxCfg.GraphicsConfigPtr = (VOID *)(UINTN)FspsUpd->FspsConfig.GraphicsConfigPtr;
+   Status = CallPpiAndFillFrameBuffer (&GfxCfg);
+ 
+   return Status;
+-- 
+2.19.1.windows.1
+
