@@ -123,6 +123,58 @@ PreparePayload (
   return Dst;
 }
 
+/**
+  Load universal payload image into memory.
+
+  @param[in]  ImageBase    The universal payload image base
+  @param[in]  PldEntry     The payload image entry point
+
+  @retval     EFI_SUCCESS      The image was loaded successfully
+              EFI_ABORTED      The image loading failed
+              EFI_UNSUPPORTED  The relocation format is not supported
+
+**/
+EFI_STATUS
+LoadUniversalPayload (
+  IN  UINT32          ImageBase,
+  IN  PAYLOAD_ENTRY  *PldEntry
+)
+{
+  EFI_STATUS              Status;
+  UPLD_INFO_HEADER       *UpldInfoHdr;
+  UPLD_RELOC_HEADER      *UpldRelocHdr;
+  UINT32                  PldImgBase;
+
+  UpldInfoHdr = (UPLD_INFO_HEADER *)ImageBase;
+  if ((UpldInfoHdr->Capability & UPLD_IMAGE_CAP_RELOC) != 0) {
+    DEBUG ((DEBUG_INFO, "Found relocation table\n"));
+    UpldRelocHdr = (UPLD_RELOC_HEADER *)&UpldInfoHdr[1];
+    if (UpldRelocHdr->CommonHeader.Identifier != UPLD_RELOC_ID) {
+      DEBUG ((DEBUG_INFO, "Relocation table is invalid !\n"));
+      return EFI_ABORTED;
+    }
+    PldImgBase = ImageBase + UpldInfoHdr->ImageOffset;
+    if (UpldRelocHdr->RelocFmt == UPLD_RELOC_FMT_RAW) {
+      // For now, reuse PeCoffRelocateImage
+      Status = PeCoffRelocateImage (PldImgBase + UpldRelocHdr->RelocImgOffset);
+      if (EFI_ERROR(Status)) {
+        DEBUG ((DEBUG_INFO, "Image relocation failed - %r\n", Status));
+        return EFI_ABORTED;
+      }
+      if (PldEntry != NULL) {
+        *PldEntry = (PAYLOAD_ENTRY)(PldImgBase + UpldInfoHdr->EntryPointOffset);
+        DEBUG ((DEBUG_INFO, "Image entry point is at %p\n", *PldEntry));
+      }
+      DEBUG ((DEBUG_INFO, "Image was relocated successfully\n"));
+    } else {
+      // Not support yet
+      DEBUG ((DEBUG_INFO, "Relocation format is not supported yet !\n"));
+      return EFI_UNSUPPORTED;
+    }
+  }
+
+  return Status;
+}
 
 /**
   Normal boot flow.
@@ -167,7 +219,11 @@ NormalBootPath (
   PldMachine = IS_X64 ? IMAGE_FILE_MACHINE_X64 : IMAGE_FILE_MACHINE_I386;
 
   Status  = EFI_SUCCESS;
-  if (Dst[0] == 0x00005A4D) {
+  if (Dst[0] == UPLD_IMAGE_HEADER_ID) {
+    // Universal payload
+    DEBUG ((DEBUG_INFO, "Universal Payload\n"));
+    LoadUniversalPayload ((UINT32)(UINTN)Dst, &PldEntry);
+  } else if (Dst[0] == 0x00005A4D) {
     // It is a PE format
     DEBUG ((DEBUG_INFO, "PE32 Format Payload\n"));
     Status = PeCoffRelocateImage ((UINT32)(UINTN)Dst);

@@ -52,6 +52,7 @@
 #include <Guid/MpCpuTaskInfoHob.h>
 #include <Guid/AcpiTableGuid.h>
 #include <Guid/SmbiosTableGuid.h>
+#include <Standard/UniversalPayload.h>
 #include <Service/PlatformService.h>
 #include <Pi/PiBootMode.h>
 #include <FspEas.h>
