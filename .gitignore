@@ -11,6 +11,7 @@ ResetVector.*.raw
 Fsp.bsf
 FspDbg.bin
 FspRel.bin
+FspArch.txt
 /Outputs
 /Stitch
 /Build

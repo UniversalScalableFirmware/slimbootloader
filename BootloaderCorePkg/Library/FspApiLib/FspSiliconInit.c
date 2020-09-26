@@ -56,7 +56,7 @@ CallFspSiliconInit (
   DEBUG ((DEBUG_INFO, "Call FspSiliconInit "));
   if (IS_X64 && !(FspHeader->ComponentAttribute & BIT2)) {
     DEBUG ((DEBUG_INFO, "(x86)"));
-    Status = Execute32BitCode ((UINTN)FspSiliconInit, (UINTN)FspsUpd, (UINTN)0, FALSE);
+    Status = Execute32BitCode ((UINTN)FspSiliconInit, (UINTN)FspsUpdptr, (UINTN)0, FALSE);
     Status = (UINTN)LShiftU64 (Status & ((UINTN)MAX_INT32 + 1), 32) | (Status & MAX_INT32);
   } else {
     if (IS_X64) {
