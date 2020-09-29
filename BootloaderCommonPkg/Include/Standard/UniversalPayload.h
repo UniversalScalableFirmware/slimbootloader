@@ -7,6 +7,8 @@
 #ifndef __UNIVERSAL_PAYLOAD_H__
 #define __UNIVERSAL_PAYLOAD_H__
 
+typedef  VOID   (EFIAPI *UNIVERSAL_PAYLOAD_ENTRY) (VOID *HobList);
+
 #define  UPLD_IMAGE_HEADER_ID    SIGNATURE_32('P','L','D', 'H')
 #define  UPLD_RELOC_ID           SIGNATURE_32('P','L','D', 'R')
 
@@ -69,7 +71,7 @@ typedef struct {
   UINT16                   KeySize;
 
   //KeyType RSA or ECC
-  KEY_TYPE                 KeyType;
+  UINT8                    KeyType;
 
   UINT8                    Rsvd;
 
@@ -86,10 +88,10 @@ typedef struct {
   UINT16                   SigSize;
 
  //PKCSv1.5 or RSA-PSS or ECC
-  SIGN_TYPE                SigType;
+  UINT8                    SigType;
 
   //Hash Alg for signingh SHA256, SHA384
-  HASH_ALG_TYPE            HashAlg;
+  UINT8                    HashAlg;
 
   //Signature length defined by SigSize bytes
   UINT8                    Signature[0];
