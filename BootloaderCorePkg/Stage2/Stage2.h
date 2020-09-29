@@ -41,6 +41,7 @@
 #include <Library/ThunkLib.h>
 #include <Library/LocalApicLib.h>
 #include <Library/ContainerLib.h>
+#include <Library/UniversalPayloadLib.h>
 #include <Guid/BootLoaderServiceGuid.h>
 #include <Guid/BootLoaderVersionGuid.h>
 #include <Guid/LoaderPlatformInfoGuid.h>
@@ -52,7 +53,6 @@
 #include <Guid/MpCpuTaskInfoHob.h>
 #include <Guid/AcpiTableGuid.h>
 #include <Guid/SmbiosTableGuid.h>
-#include <Standard/UniversalPayload.h>
 #include <Service/PlatformService.h>
 #include <Pi/PiBootMode.h>
 #include <FspEas.h>

@@ -68,6 +68,7 @@
   StageLib
   ThunkLib
   LocalApicLib
+  UniversalPayloadLib
 
 [Guids]
   gFspReservedMemoryResourceHobGuid
