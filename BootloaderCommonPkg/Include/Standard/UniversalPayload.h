@@ -11,6 +11,7 @@ typedef  VOID   (EFIAPI *UNIVERSAL_PAYLOAD_ENTRY) (VOID *HobList);
 
 #define  UPLD_IMAGE_HEADER_ID    SIGNATURE_32('P','L','D', 'H')
 #define  UPLD_RELOC_ID           SIGNATURE_32('P','L','D', 'R')
+#define  UPLD_AUTH_ID            SIGNATURE_32('P','L','D', 'A')
 
 #define  UPLD_AUTH_PUBKEY_ID     SIGNATURE_32('P','U','B', 'K')
 #define  UPLD_AUTH_SIGNATURE_ID  SIGNATURE_32('S','I','G', 'N')
@@ -61,6 +62,12 @@ typedef struct {
   UINT32                  PageRva;
   UINT32                  BlockSize;
 } PE_RELOC_BLOCK_HEADER;
+
+
+typedef struct {
+  UPLD_COMMON_HEADER      CommonHeader;
+  UINT8                   AuthData[0];
+} UPLD_AUTH_HEADER;
 
 
 typedef struct {

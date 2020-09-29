@@ -170,7 +170,17 @@ NormalBootPath (
   if (Dst[0] == UPLD_IMAGE_HEADER_ID) {
     // Universal payload
     DEBUG ((DEBUG_INFO, "Universal Payload\n"));
-    LoadUniversalPayload ((UINT32)(UINTN)Dst, (UNIVERSAL_PAYLOAD_ENTRY *)&PldEntry);
+
+    // For SBL, it has been authenticated by container already.
+    // For test purpose, here do authentication again using universal payload method.
+    Status = AuthenticateUniversalPayload ((UINT32)(UINTN)Dst);
+    if (EFI_ERROR(Status)) {
+      CpuHalt ("UPayload authentication failed !");
+    }
+    Status = LoadUniversalPayload ((UINT32)(UINTN)Dst, (UNIVERSAL_PAYLOAD_ENTRY *)&PldEntry);
+    if (EFI_ERROR(Status)) {
+      DEBUG ((DEBUG_ERROR, "UPayload load failed !\n"));
+    }
   } else if (Dst[0] == 0x00005A4D) {
     // It is a PE format
     DEBUG ((DEBUG_INFO, "PE32 Format Payload\n"));

@@ -31,3 +31,4 @@
   DebugLib
 
 [Pcd]
+  gPlatformCommonLibTokenSpaceGuid.PcdVerifiedBootEnabled
