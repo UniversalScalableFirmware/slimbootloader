@@ -9,13 +9,12 @@
 #include <Library/DebugLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/BootloaderCommonLib.h>
+#include <Library/SecureBootLib.h>
 #include <Library/LitePeCoffLib.h>
 #include <Library/UniversalPayloadLib.h>
 
-
-#undef   DEBUG_VERBOSE
-#define  DEBUG_VERBOSE   DEBUG_INFO
-
+//#undef   DEBUG_VERBOSE
+//#define  DEBUG_VERBOSE   DEBUG_INFO
 
 /**
   Performs an specific relocation fpr PECOFF images. The caller needs to
@@ -66,7 +65,7 @@ RelocateUniversalPayload (
 
   PeBase             = ActPldBase + UpldRelocHdr->RelocImgOffset;
   Adjust             = UpldRelocHdr->RelocImgStripped;
-  DEBUG ((DEBUG_VERBOSE, "BaseDelta: 0x%x  Adjust: 0x%x\n", FixupDelta, Adjust));
+  DEBUG ((DEBUG_VERBOSE, "BaseGap: 0x%x  Adjust: 0x%x\n", FixupDelta, Adjust));
 
   // This seems to be a bug in the way MS generates the reloc fixup blocks.
   // After we have gone thru all the fixup blocks in the .reloc section, the
@@ -127,6 +126,7 @@ RelocateUniversalPayload (
 }
 
 
+
 /**
   Load universal payload image into memory.
 
@@ -151,27 +151,152 @@ LoadUniversalPayload (
   UINT32                  PldImgBase;
 
   UpldInfoHdr = (UPLD_INFO_HEADER *)ImageBase;
-  if ((UpldInfoHdr->Capability & UPLD_IMAGE_CAP_RELOC) != 0) {
-    DEBUG ((DEBUG_VERBOSE, "Found relocation table\n"));
-    UpldRelocHdr = (UPLD_RELOC_HEADER *)&UpldInfoHdr[1];
-    if (UpldRelocHdr->CommonHeader.Identifier != UPLD_RELOC_ID) {
-      DEBUG ((DEBUG_ERROR, "Relocation table is invalid !\n"));
-      return EFI_ABORTED;
-    }
+  if (UpldInfoHdr->CommonHeader.Identifier != UPLD_IMAGE_HEADER_ID) {
+    DEBUG ((DEBUG_ERROR, "UPayload image format is invalid !\n"));
+    return EFI_ABORTED;
+  }
 
-    PldImgBase = ImageBase + UpldInfoHdr->ImageOffset;
-    Status = RelocateUniversalPayload (UpldRelocHdr, PldImgBase, PldImgBase - (UINT32)UpldInfoHdr->ImageBase);
-    if (EFI_ERROR(Status)) {
-      DEBUG ((DEBUG_ERROR, "Payload image relocation failed - %r\n", Status));
-    } else {
-      DEBUG ((DEBUG_VERBOSE, "Image was relocated successfully\n"));
-      if (PldEntry != NULL) {
-        *PldEntry = (UNIVERSAL_PAYLOAD_ENTRY)(PldImgBase + UpldInfoHdr->EntryPointOffset);
-        DEBUG ((DEBUG_VERBOSE, "Image entry point is at %p\n", *PldEntry));
-      }
+  if ((UpldInfoHdr->Capability & UPLD_IMAGE_CAP_RELOC) == 0) {
+    DEBUG ((DEBUG_INFO,  "UPayload has no relocation info\n"));
+    return EFI_SUCCESS;
+  }
+
+  UpldRelocHdr = (UPLD_RELOC_HEADER *)&UpldInfoHdr[1];
+  if (UpldRelocHdr->CommonHeader.Identifier != UPLD_RELOC_ID) {
+    DEBUG ((DEBUG_ERROR, "UPayload relocation table is invalid !\n"));
+    return EFI_ABORTED;
+  }
+
+  PldImgBase = ImageBase + UpldInfoHdr->ImageOffset;
+  Status = RelocateUniversalPayload (UpldRelocHdr, PldImgBase, PldImgBase - (UINT32)UpldInfoHdr->ImageBase);
+  if (!EFI_ERROR(Status)) {
+    if (PldEntry != NULL) {
+      *PldEntry = (UNIVERSAL_PAYLOAD_ENTRY)(PldImgBase + UpldInfoHdr->EntryPointOffset);
+      DEBUG ((DEBUG_VERBOSE, "Image entry point is at %p\n", *PldEntry));
     }
+  }
+
+  if (EFI_ERROR(Status)) {
+    DEBUG ((DEBUG_ERROR, "UPayload relocatin failed - %r\n", Status));
+  } else {
+    DEBUG ((DEBUG_INFO,  "UPayload was relocated successfully\n"));
   }
 
   return Status;
 }
 
+
+/**
+  Authenticate a universal payload image.
+
+  @param[in]  ImageBase    The universal payload image base
+
+  @retval     EFI_SUCCESS      The image was authenticated successfully
+              EFI_ABORTED      The image loading failed
+              EFI_UNSUPPORTED  The relocation format is not supported
+              EFI_SECURITY_VIOLATION  The image does not contain auth info
+
+**/
+EFI_STATUS
+EFIAPI
+AuthenticateUniversalPayload (
+  IN  UINT32                    ImageBase
+)
+{
+  EFI_STATUS              Status;
+  UPLD_INFO_HEADER       *UpldInfoHdr;
+  UPLD_AUTH_HEADER       *UpldAuthHdr;
+  UINT32                  Address;
+  UPLD_SIGNATURE_HDR     *Signature;
+  UPLD_PUB_KEY_HDR       *PubKey;
+
+  UpldInfoHdr = (UPLD_INFO_HEADER *)ImageBase;
+  if (UpldInfoHdr->CommonHeader.Identifier != UPLD_IMAGE_HEADER_ID) {
+    DEBUG ((DEBUG_ERROR, "UPayload image format is invalid !\n"));
+    return EFI_ABORTED;
+  }
+
+  if (!FeaturePcdGet (PcdVerifiedBootEnabled)) {
+    DEBUG ((DEBUG_INFO,  "UPayload authentication skipped\n"));
+    return EFI_SUCCESS;
+  }
+
+  if ((UpldInfoHdr->Capability & UPLD_IMAGE_CAP_AUTH) == 0) {
+    DEBUG ((DEBUG_ERROR, "UPayload image does not support authentification !\n"));
+    return EFI_SECURITY_VIOLATION;
+  }
+
+  Address = ImageBase + UpldInfoHdr->ImageOffset + UpldInfoHdr->ImageLength;
+  Address = ALIGN_UP (Address, sizeof(UINT32));
+  UpldAuthHdr = (UPLD_AUTH_HEADER *)Address;
+  if (UpldAuthHdr->CommonHeader.Identifier != UPLD_AUTH_ID) {
+    DEBUG ((DEBUG_ERROR, "UPayload auth table is invalid !\n"));
+    return EFI_ABORTED;
+  }
+
+  Signature = (UPLD_SIGNATURE_HDR *)&UpldAuthHdr[1];
+  if (Signature->Identifier != UPLD_AUTH_SIGNATURE_ID) {
+    DEBUG ((DEBUG_ERROR, "UPayload signature header is invalid !\n"));
+    return EFI_ABORTED;
+  }
+
+  PubKey = (UPLD_PUB_KEY_HDR *)((UINT8 *)&Signature[1] + Signature->SigSize);
+  if (PubKey->Identifier != UPLD_AUTH_PUBKEY_ID) {
+    DEBUG ((DEBUG_ERROR, "UPayload pubkey header is invalid !\n"));
+    return EFI_ABORTED;
+  }
+
+  Status = DoRsaVerify (  (UINT8 *)(UINTN)ImageBase,
+                          UpldInfoHdr->ImageOffset + UpldInfoHdr->ImageLength,
+                          HASH_USAGE_PUBKEY_OS,
+                          (SIGNATURE_HDR *)Signature,  (PUB_KEY_HDR *)PubKey,
+                          HASH_TYPE_SHA384, NULL, NULL);
+
+  if (EFI_ERROR(Status)) {
+    DEBUG ((DEBUG_ERROR, "UPayload authentication failed - %r\n", Status));
+  } else {
+    DEBUG ((DEBUG_INFO,  "UPayload authentication passed\n"));
+  }
+
+  return EFI_SUCCESS;
+}
+
+/*
+
+  IN  UINT8    *Data,
+  IN  UINT32    Length,
+  IN  UINT8     AuthType,
+  IN  UINT8    *AuthData,
+  IN  UINT8    *HashData,
+  IN  UINT32    Usage
+  )
+{
+  EFI_STATUS  Status;
+  UINT8                    *SigPtr;
+  UINT8                    *KeyPtr;
+  SIGNATURE_HDR            *SignHdr;
+
+  if (!FeaturePcdGet (PcdVerifiedBootEnabled)) {
+    Status = EFI_SUCCESS;
+  } else {
+    if (AuthType == AUTH_TYPE_SHA2_256) {
+      Status = DoHashVerify (Data, Length, Usage, HASH_TYPE_SHA256, HashData);
+    } else if (AuthType == AUTH_TYPE_SHA2_384) {
+      Status = DoHashVerify (Data, Length, Usage, HASH_TYPE_SHA384, HashData);
+    } else if ((AuthType == AUTH_TYPE_SIG_RSA2048_PKCSI1_SHA256) || ( AuthType == AUTH_TYPE_SIG_RSA3072_PKCSI1_SHA384)
+           || (AuthType == AUTH_TYPE_SIG_RSA2048_PSS_SHA256) || ( AuthType == AUTH_TYPE_SIG_RSA3072_PSS_SHA384)) {
+      SigPtr   = (UINT8 *) AuthData;
+      SignHdr  = (SIGNATURE_HDR *) SigPtr;
+      KeyPtr   = (UINT8 *)SignHdr + sizeof(SIGNATURE_HDR) + SignHdr->SigSize ;
+      Status   = DoRsaVerify (Data, Length, Usage, SignHdr,
+                             (PUB_KEY_HDR *) KeyPtr, GetHashAlg(AuthType), HashData, NULL);
+    } else if (AuthType == AUTH_TYPE_NONE) {
+      Status = EFI_SUCCESS;
+    } else {
+      Status = EFI_UNSUPPORTED;
+    }
+  }
+
+  return Status;
+}
+*/
