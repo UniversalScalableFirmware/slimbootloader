@@ -177,7 +177,7 @@ LoadUniversalPayload (
   }
 
   if (EFI_ERROR(Status)) {
-    DEBUG ((DEBUG_ERROR, "UPayload relocatin failed - %r\n", Status));
+    DEBUG ((DEBUG_ERROR, "UPayload relocation failed - %r\n", Status));
   } else {
     DEBUG ((DEBUG_INFO,  "UPayload was relocated successfully\n"));
   }
@@ -261,42 +261,3 @@ AuthenticateUniversalPayload (
   return EFI_SUCCESS;
 }
 
-/*
-
-  IN  UINT8    *Data,
-  IN  UINT32    Length,
-  IN  UINT8     AuthType,
-  IN  UINT8    *AuthData,
-  IN  UINT8    *HashData,
-  IN  UINT32    Usage
-  )
-{
-  EFI_STATUS  Status;
-  UINT8                    *SigPtr;
-  UINT8                    *KeyPtr;
-  SIGNATURE_HDR            *SignHdr;
-
-  if (!FeaturePcdGet (PcdVerifiedBootEnabled)) {
-    Status = EFI_SUCCESS;
-  } else {
-    if (AuthType == AUTH_TYPE_SHA2_256) {
-      Status = DoHashVerify (Data, Length, Usage, HASH_TYPE_SHA256, HashData);
-    } else if (AuthType == AUTH_TYPE_SHA2_384) {
-      Status = DoHashVerify (Data, Length, Usage, HASH_TYPE_SHA384, HashData);
-    } else if ((AuthType == AUTH_TYPE_SIG_RSA2048_PKCSI1_SHA256) || ( AuthType == AUTH_TYPE_SIG_RSA3072_PKCSI1_SHA384)
-           || (AuthType == AUTH_TYPE_SIG_RSA2048_PSS_SHA256) || ( AuthType == AUTH_TYPE_SIG_RSA3072_PSS_SHA384)) {
-      SigPtr   = (UINT8 *) AuthData;
-      SignHdr  = (SIGNATURE_HDR *) SigPtr;
-      KeyPtr   = (UINT8 *)SignHdr + sizeof(SIGNATURE_HDR) + SignHdr->SigSize ;
-      Status   = DoRsaVerify (Data, Length, Usage, SignHdr,
-                             (PUB_KEY_HDR *) KeyPtr, GetHashAlg(AuthType), HashData, NULL);
-    } else if (AuthType == AUTH_TYPE_NONE) {
-      Status = EFI_SUCCESS;
-    } else {
-      Status = EFI_UNSUPPORTED;
-    }
-  }
-
-  return Status;
-}
-*/
