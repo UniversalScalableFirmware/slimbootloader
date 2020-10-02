@@ -150,14 +150,29 @@ LoadUniversalPayload (
   UPLD_RELOC_HEADER      *UpldRelocHdr;
   UINT32                  PldImgBase;
 
-  UpldInfoHdr = (UPLD_INFO_HEADER *)ImageBase;
+  UpldInfoHdr = (UPLD_INFO_HEADER *)(UINTN)ImageBase;
   if (UpldInfoHdr->CommonHeader.Identifier != UPLD_IMAGE_HEADER_ID) {
     DEBUG ((DEBUG_ERROR, "UPayload image format is invalid !\n"));
     return EFI_ABORTED;
   }
 
+  PldImgBase = ImageBase + UpldInfoHdr->ImageOffset;
   if ((UpldInfoHdr->Capability & UPLD_IMAGE_CAP_RELOC) == 0) {
     DEBUG ((DEBUG_INFO,  "UPayload has no relocation info\n"));
+    // If relocation is not provided,
+    // it is required to load to the preferred base
+    if (UpldInfoHdr->ImageBase != PldImgBase) {
+      CopyMem ((VOID *)(UINTN)UpldInfoHdr->ImageBase,  (VOID *)(UINTN)PldImgBase, UpldInfoHdr->ImageLength);
+      PldImgBase = (UINT32)UpldInfoHdr->ImageBase;
+    }
+  }
+
+  if (PldEntry != NULL) {
+    *PldEntry = (UNIVERSAL_PAYLOAD_ENTRY)(UINTN)(PldImgBase + UpldInfoHdr->EntryPointOffset);
+    DEBUG ((DEBUG_VERBOSE, "Image entry point is at %p\n", *PldEntry));
+  }
+
+  if ((UpldInfoHdr->Capability & UPLD_IMAGE_CAP_RELOC) == 0) {
     return EFI_SUCCESS;
   }
 
@@ -171,7 +186,7 @@ LoadUniversalPayload (
   Status = RelocateUniversalPayload (UpldRelocHdr, PldImgBase, PldImgBase - (UINT32)UpldInfoHdr->ImageBase);
   if (!EFI_ERROR(Status)) {
     if (PldEntry != NULL) {
-      *PldEntry = (UNIVERSAL_PAYLOAD_ENTRY)(PldImgBase + UpldInfoHdr->EntryPointOffset);
+      *PldEntry = (UNIVERSAL_PAYLOAD_ENTRY)(UINTN)(PldImgBase + UpldInfoHdr->EntryPointOffset);
       DEBUG ((DEBUG_VERBOSE, "Image entry point is at %p\n", *PldEntry));
     }
   }
@@ -210,7 +225,7 @@ AuthenticateUniversalPayload (
   UPLD_SIGNATURE_HDR     *Signature;
   UPLD_PUB_KEY_HDR       *PubKey;
 
-  UpldInfoHdr = (UPLD_INFO_HEADER *)ImageBase;
+  UpldInfoHdr = (UPLD_INFO_HEADER *)(UINTN)ImageBase;
   if (UpldInfoHdr->CommonHeader.Identifier != UPLD_IMAGE_HEADER_ID) {
     DEBUG ((DEBUG_ERROR, "UPayload image format is invalid !\n"));
     return EFI_ABORTED;
@@ -228,7 +243,7 @@ AuthenticateUniversalPayload (
 
   Address = ImageBase + UpldInfoHdr->ImageOffset + UpldInfoHdr->ImageLength;
   Address = ALIGN_UP (Address, sizeof(UINT32));
-  UpldAuthHdr = (UPLD_AUTH_HEADER *)Address;
+  UpldAuthHdr = (UPLD_AUTH_HEADER *)(UINTN)Address;
   if (UpldAuthHdr->CommonHeader.Identifier != UPLD_AUTH_ID) {
     DEBUG ((DEBUG_ERROR, "UPayload auth table is invalid !\n"));
     return EFI_ABORTED;

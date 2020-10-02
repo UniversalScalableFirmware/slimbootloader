@@ -697,7 +697,7 @@ def gen_payload_bin (fv_dir, arch_dir, pld_list, pld_bin, priv_key, hash_alg, si
     auth_type = key_type + '_' + sign_scheme +  '_' + hash_alg
     pld_list = [('EPLD', '%s' % epld_bin, '', auth_type, '%s' % os.path.basename(priv_key), alignment, 0, svn)]
     for pld in ext_list:
-        pld_list.append ((pld['name'], pld['file'], pld['algo'], hash_alg, '', 0, 0, svn))
+        pld_list.append ((pld['name'], pld['file'], pld['algo'], 'NONE', '', 0, 0, svn))
     gen_container_bin ([pld_list], fv_dir, fv_dir, key_dir, '')
 
 def pub_key_valid (pubkey):
