@@ -151,6 +151,7 @@ LoadUniversalPayload (
   UPLD_INFO_HEADER       *UpldInfoHdr;
   UPLD_RELOC_HEADER      *UpldRelocHdr;
   UINT32                  PldImgBase;
+  CHAR8                   ImageId[9];
 
   UpldInfoHdr = (UPLD_INFO_HEADER *)(UINTN)ImageBase;
   if (UpldInfoHdr->CommonHeader.Identifier != UPLD_IMAGE_HEADER_ID) {
@@ -161,6 +162,10 @@ LoadUniversalPayload (
   if (PldMachine != NULL) {
     *PldMachine = UpldInfoHdr->Machine;
   }
+
+  ImageId[8] = 0;
+  *(UINT64 *)ImageId = *(UINT64 *)UpldInfoHdr->ImageId;
+  DEBUG ((DEBUG_INFO,  "UPayload ImageId is %a, Machine: %04X\n", ImageId, UpldInfoHdr->Machine));
 
   PldImgBase = ImageBase + UpldInfoHdr->ImageOffset;
   if ((UpldInfoHdr->Capability & UPLD_IMAGE_CAP_RELOC) == 0) {
