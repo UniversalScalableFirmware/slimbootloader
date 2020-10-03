@@ -15,6 +15,7 @@
 
   @param[in]  ImageBase    The universal payload image base
   @param[in]  PldEntry     The payload image entry point
+  @param[in]  EntryMode    Indicate image entry mode
 
   @retval     EFI_SUCCESS      The image was loaded successfully
               EFI_ABORTED      The image loading failed
@@ -25,7 +26,8 @@ EFI_STATUS
 EFIAPI
 LoadUniversalPayload (
   IN  UINT32                    ImageBase,
-  IN  UNIVERSAL_PAYLOAD_ENTRY  *PldEntry
+  IN  UNIVERSAL_PAYLOAD_ENTRY  *PldEntry,
+  IN  UINT32                   *EntryMode
 );
 
 /**
