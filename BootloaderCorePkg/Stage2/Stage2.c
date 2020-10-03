@@ -177,7 +177,7 @@ NormalBootPath (
     if (EFI_ERROR(Status)) {
       CpuHalt ("UPayload authentication failed !");
     }
-    Status = LoadUniversalPayload ((UINT32)(UINTN)Dst, (UNIVERSAL_PAYLOAD_ENTRY *)&PldEntry);
+    Status = LoadUniversalPayload ((UINT32)(UINTN)Dst, (UNIVERSAL_PAYLOAD_ENTRY *)&PldEntry, &PldMachine);
     if (EFI_ERROR(Status)) {
       DEBUG ((DEBUG_ERROR, "UPayload load failed !\n"));
     }

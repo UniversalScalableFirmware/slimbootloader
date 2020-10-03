@@ -132,6 +132,7 @@ RelocateUniversalPayload (
 
   @param[in]  ImageBase    The universal payload image base
   @param[in]  PldEntry     The payload image entry point
+  @param[in]  PldMachine   Indicate image machine type
 
   @retval     EFI_SUCCESS      The image was loaded successfully
               EFI_ABORTED      The image loading failed
@@ -142,7 +143,8 @@ EFI_STATUS
 EFIAPI
 LoadUniversalPayload (
   IN  UINT32                    ImageBase,
-  IN  UNIVERSAL_PAYLOAD_ENTRY  *PldEntry
+  IN  UNIVERSAL_PAYLOAD_ENTRY  *PldEntry,
+  IN  UINT32                   *PldMachine
 )
 {
   EFI_STATUS              Status;
@@ -154,6 +156,10 @@ LoadUniversalPayload (
   if (UpldInfoHdr->CommonHeader.Identifier != UPLD_IMAGE_HEADER_ID) {
     DEBUG ((DEBUG_ERROR, "UPayload image format is invalid !\n"));
     return EFI_ABORTED;
+  }
+
+  if (PldMachine != NULL) {
+    *PldMachine = UpldInfoHdr->Machine;
   }
 
   PldImgBase = ImageBase + UpldInfoHdr->ImageOffset;
