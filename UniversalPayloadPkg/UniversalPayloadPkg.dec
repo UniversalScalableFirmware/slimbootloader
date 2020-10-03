@@ -1,0 +1,26 @@
+## @file  PayloadPkg.dec
+# This Package provides all definitions, library classes and libraries instances.
+#
+# Copyright (c) 2017, Intel Corporation. All rights reserved.<BR>
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  DEC_SPECIFICATION              = 0x00010005
+  PACKAGE_NAME                   = UniversalPayloadPkg
+  PACKAGE_GUID                   = 8033B974-BFAF-4C37-B124-EB2123E19BBB
+  PACKAGE_VERSION                = 0.1
+
+[Includes]
+  Include
+
+[LibraryClasses]
+
+
+[Guids]
+  #
+  # GUID defined in package
+  #
+  gUniversalPayloadTokenSpaceGuid = { 0xc9f94e7a, 0x8189, 0x4339, { 0x8b, 0x3, 0x49, 0xf, 0x64, 0x7, 0x8, 0xb4 } };
+

@@ -274,7 +274,7 @@ class BaseBoard(object):
         self.PLD_RSVD_MEM_SIZE     = 0x00004000
 
         # These memory sizes need to be page aligned
-        self.LOADER_RSVD_MEM_SIZE         = 0x0058C000
+        self.LOADER_RSVD_MEM_SIZE         = 0x0078C000
         self.LOADER_ACPI_NVS_MEM_SIZE     = 0x00008000
         self.LOADER_ACPI_RECLAIM_MEM_SIZE = 0x00068000
 
