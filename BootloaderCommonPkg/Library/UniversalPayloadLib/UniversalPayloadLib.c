@@ -130,9 +130,10 @@ RelocateUniversalPayload (
 /**
   Load universal payload image into memory.
 
-  @param[in]  ImageBase    The universal payload image base
-  @param[in]  PldEntry     The payload image entry point
-  @param[in]  PldMachine   Indicate image machine type
+  @param[in]   ImageBase    The universal payload image base
+  @param[out]  PldEntry     Pointer to receive payload entry point
+  @param[out]  PldBase      Pointer to receive payload image base
+  @param[out]  PldMachine   Pointer to receive payload image machine type
 
   @retval     EFI_SUCCESS      The image was loaded successfully
               EFI_ABORTED      The image loading failed
@@ -142,9 +143,10 @@ RelocateUniversalPayload (
 EFI_STATUS
 EFIAPI
 LoadUniversalPayload (
-  IN  UINT32                    ImageBase,
-  IN  UNIVERSAL_PAYLOAD_ENTRY  *PldEntry,
-  IN  UINT32                   *PldMachine
+  IN  UINTN                    ImageBase,
+  OUT UNIVERSAL_PAYLOAD_ENTRY  *PldEntry,
+  OUT UINT32                   *PldBase,
+  OUT UINT32                   *PldMachine
 )
 {
   EFI_STATUS              Status;
@@ -167,7 +169,7 @@ LoadUniversalPayload (
   *(UINT64 *)ImageId = *(UINT64 *)UpldInfoHdr->ImageId;
   DEBUG ((DEBUG_INFO,  "UPayload ImageId is %a, Machine: %04X\n", ImageId, UpldInfoHdr->Machine));
 
-  PldImgBase = ImageBase + UpldInfoHdr->ImageOffset;
+  PldImgBase = (UINT32)(ImageBase + UpldInfoHdr->ImageOffset);
   if ((UpldInfoHdr->Capability & UPLD_IMAGE_CAP_RELOC) == 0) {
     DEBUG ((DEBUG_INFO,  "UPayload has no relocation info\n"));
     // If relocation is not provided,
@@ -193,9 +195,12 @@ LoadUniversalPayload (
     return EFI_ABORTED;
   }
 
-  PldImgBase = ImageBase + UpldInfoHdr->ImageOffset;
+  PldImgBase = (UINT32)(ImageBase + UpldInfoHdr->ImageOffset);
   Status = RelocateUniversalPayload (UpldRelocHdr, PldImgBase, PldImgBase - (UINT32)UpldInfoHdr->ImageBase);
   if (!EFI_ERROR(Status)) {
+    if (PldBase != NULL) {
+      *PldBase = PldImgBase;
+    }
     if (PldEntry != NULL) {
       *PldEntry = (UNIVERSAL_PAYLOAD_ENTRY)(UINTN)(PldImgBase + UpldInfoHdr->EntryPointOffset);
       DEBUG ((DEBUG_VERBOSE, "Image entry point is at %p\n", *PldEntry));

@@ -138,7 +138,8 @@ NormalBootPath (
   UINT32                         *Dst;
   PAYLOAD_ENTRY                   PldEntry;
   VOID                           *PldHobList;
-  UINTN                          PldBase;
+  UINTN                           PldBase;
+  UINT32                          TmpBase;
   LOADER_GLOBAL_DATA             *LdrGlobal;
   EFI_STATUS                      Status;
   BOOLEAN                         CallBoardNotify;
@@ -177,8 +178,10 @@ NormalBootPath (
     if (EFI_ERROR(Status)) {
       CpuHalt ("UPayload authentication failed !");
     }
-    Status = LoadUniversalPayload ((UINT32)(UINTN)Dst, (UNIVERSAL_PAYLOAD_ENTRY *)&PldEntry, &PldMachine);
-    if (EFI_ERROR(Status)) {
+    Status = LoadUniversalPayload ((UINT32)(UINTN)Dst, (UNIVERSAL_PAYLOAD_ENTRY *)&PldEntry, &TmpBase, &PldMachine);
+    if (!EFI_ERROR(Status)) {
+      PldBase = TmpBase;
+    } else {
       DEBUG ((DEBUG_ERROR, "UPayload load failed !\n"));
     }
   } else if (Dst[0] == 0x00005A4D) {

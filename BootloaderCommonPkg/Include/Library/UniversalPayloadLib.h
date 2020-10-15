@@ -13,9 +13,10 @@
 /**
   Load universal payload image into memory.
 
-  @param[in]  ImageBase    The universal payload image base
-  @param[in]  PldEntry     The payload image entry point
-  @param[in]  EntryMode    Indicate image entry mode
+  @param[in]   ImageBase    The universal payload image base
+  @param[out]  PldEntry     Pointer to receive payload entry point
+  @param[out]  PldBase      Pointer to receive payload image base
+  @param[out]  PldMachine   Pointer to receive payload image machine type
 
   @retval     EFI_SUCCESS      The image was loaded successfully
               EFI_ABORTED      The image loading failed
@@ -25,9 +26,10 @@
 EFI_STATUS
 EFIAPI
 LoadUniversalPayload (
-  IN  UINT32                    ImageBase,
-  IN  UNIVERSAL_PAYLOAD_ENTRY  *PldEntry,
-  IN  UINT32                   *EntryMode
+  IN  UINTN                    ImageBase,
+  OUT UNIVERSAL_PAYLOAD_ENTRY  *PldEntry,
+  OUT UINT32                   *PldBase,
+  OUT UINT32                   *PldMachine
 );
 
 /**
