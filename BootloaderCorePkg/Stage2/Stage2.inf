@@ -118,6 +118,7 @@
   gPlatformModuleTokenSpaceGuid.PcdServiceNumber
   gPlatformModuleTokenSpaceGuid.PcdFlashBaseAddress
   gPlatformModuleTokenSpaceGuid.PcdFlashSize
+  gPlatformModuleTokenSpaceGuid.PcdUseFspBinary
   gPlatformCommonLibTokenSpaceGuid.PcdMeasuredBootEnabled
   gPlatformModuleTokenSpaceGuid.PcdSeedListBufferSize
   gPlatformCommonLibTokenSpaceGuid.PcdSeedListEnabled

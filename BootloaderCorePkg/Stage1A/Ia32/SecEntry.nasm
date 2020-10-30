@@ -21,12 +21,14 @@ extern  ASM_PFX(SecStartup)
 extern  ASM_PFX(PcdGet32(PcdStage1StackSize))
 extern  ASM_PFX(PcdGet32(PcdStage1DataSize))
 extern  ASM_PFX(PcdGet32(PcdStage1StackBaseOffset))
+extern  ASM_PFX(PcdGetBool(PcdUseFspBinary))
 extern  ASM_PFX(EarlyBoardInit)
 extern  ASM_PFX(FspTempRamInit)
 
 global  ASM_PFX(_ModuleEntryPoint)
 ASM_PFX(_ModuleEntryPoint):
         movd    mm0, eax
+        mov     ebx, edx
 
         ;
         ; Read time stamp
@@ -34,10 +36,20 @@ ASM_PFX(_ModuleEntryPoint):
         rdtsc
         mov     esi, eax
         mov     edi, edx
+        mov     edx, ebx
+
+        ;
+        ; Check if FSP binary is available
+        ;
+        mov     ebp, esp
+        xor     eax, eax
+        cmp      al, byte [ASM_PFX(PcdGetBool(PcdUseFspBinary))]
+        jz      FspApiSuccess
 
         ;
         ; Early board hooks
         ;
+        xor     ebp, ebp
         mov     esp, EarlyBoardInitRet
         jmp     ASM_PFX(EarlyBoardInit)
 
@@ -96,7 +108,8 @@ CheckStackRangeDone:
 
 CheckStatusDone:
         ; Setup HOB
-        push    ebx                  ; Status
+        push    eax                  ; Status
+        push    ebp                  ; Hoblist
         push    edi                  ; TimeStamp[0] [63:32]
         push    esi                  ; TimeStamp[0] [31:0]
         push    edx                  ; CarTop

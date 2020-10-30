@@ -293,6 +293,7 @@
   gPlatformCommonLibTokenSpaceGuid.PcdMinDecompression    | FALSE
   gPlatformCommonLibTokenSpaceGuid.PcdMeasuredBootEnabled | $(HAVE_MEASURED_BOOT)
   gPlatformCommonLibTokenSpaceGuid.PcdVerifiedBootEnabled | $(HAVE_VERIFIED_BOOT)
+  gPlatformModuleTokenSpaceGuid.PcdUseFspBinary           | $(HAVE_FSP_BIN)
   gPlatformModuleTokenSpaceGuid.PcdIntelGfxEnabled        | $(HAVE_VBT_BIN)
   gPlatformModuleTokenSpaceGuid.PcdAcpiEnabled            | $(HAVE_ACPI_TABLE)
   gPlatformModuleTokenSpaceGuid.PcdSmpEnabled             | $(ENABLE_SMP_INIT)
@@ -348,12 +349,21 @@
   #
   BootloaderCorePkg/PcdData/PcdData.inf
 
+  BootloaderCorePkg/BootFw/Ia32/Vtf0/Bin/ResetVector.inf
+
+  BootloaderCorePkg/BootFw/BootFw.inf
+
+
   BootloaderCorePkg/Stage1A/Stage1A.inf {
     <PcdsFeatureFlag>
       gPlatformCommonLibTokenSpaceGuid.PcdMinDecompression | TRUE
       gPlatformCommonLibTokenSpaceGuid.PcdForceToInitSerialPort | TRUE
     <LibraryClasses>
+!if $(HAVE_FSP_BIN)
       FspApiLib    | BootloaderCorePkg/Library/FspApiLib/FsptApiLib.inf
+!else
+      FspApiLib    | BootloaderCorePkg/Library/FspApiLib/FspApiLibNull.inf
+!endif
       BaseMemoryLib| MdePkg/Library/BaseMemoryLibRepStr/BaseMemoryLibRepStr.inf
       SocInitLib   | Silicon/$(SILICON_PKG_NAME)/Library/Stage1ASocInitLib/Stage1ASocInitLib.inf
       BoardInitLib | Platform/$(BOARD_PKG_NAME)/Library/Stage1ABoardInitLib/Stage1ABoardInitLib.inf
@@ -364,7 +374,11 @@
 
   BootloaderCorePkg/Stage1B/Stage1B.inf {
     <LibraryClasses>
+!if $(HAVE_FSP_BIN)
       FspApiLib    | BootloaderCorePkg/Library/FspApiLib/FspmApiLib.inf
+!else
+      FspApiLib    | BootloaderCorePkg/Library/FspApiLib/FspApiLibNull.inf
+!endif
       BaseMemoryLib| MdePkg/Library/BaseMemoryLibRepStr/BaseMemoryLibRepStr.inf
       SocInitLib   | Silicon/$(SILICON_PKG_NAME)/Library/Stage1BSocInitLib/Stage1BSocInitLib.inf
       BoardInitLib | Platform/$(BOARD_PKG_NAME)/Library/Stage1BBoardInitLib/Stage1BBoardInitLib.inf
@@ -372,7 +386,11 @@
 
   BootloaderCorePkg/Stage2/Stage2.inf {
     <LibraryClasses>
+!if $(HAVE_FSP_BIN)
       FspApiLib    | BootloaderCorePkg/Library/FspApiLib/FspsApiLib.inf
+!else
+      FspApiLib    | BootloaderCorePkg/Library/FspApiLib/FspApiLibNull.inf
+!endif
       SocInitLib   | Silicon/$(SILICON_PKG_NAME)/Library/Stage2SocInitLib/Stage2SocInitLib.inf
       BoardInitLib | Platform/$(BOARD_PKG_NAME)/Library/Stage2BoardInitLib/Stage2BoardInitLib.inf
   }

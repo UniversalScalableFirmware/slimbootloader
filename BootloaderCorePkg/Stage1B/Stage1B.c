@@ -408,13 +408,17 @@ SecStartup2 (
   BoardInit (PreMemoryInit);
 
   // Initialize memory
-  HobList = NULL;
-  DEBUG ((DEBUG_INIT, "Memory Init\n"));
-  AddMeasurePoint (0x2020);
-  Status = CallFspMemoryInit (PCD_GET32_WITH_ADJUST (PcdFSPMBase), &HobList);
-  AddMeasurePoint (0x2030);
-  FspResetHandler (Status);
-  ASSERT_EFI_ERROR (Status);
+  if (FeaturePcdGet (PcdUseFspBinary)) {
+    HobList = NULL;
+    DEBUG ((DEBUG_INIT, "Memory Init\n"));
+    AddMeasurePoint (0x2020);
+    Status = CallFspMemoryInit (PCD_GET32_WITH_ADJUST (PcdFSPMBase), &HobList);
+    AddMeasurePoint (0x2030);
+    FspResetHandler (Status);
+    ASSERT_EFI_ERROR (Status);
+  } else {
+    HobList = (VOID *)Stage1aParam->HobList;
+  }
 
   FspReservedMemBase = (UINT32)GetFspReservedMemoryFromGuid (
                          HobList,

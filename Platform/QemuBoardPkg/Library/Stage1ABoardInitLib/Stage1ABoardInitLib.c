@@ -11,24 +11,6 @@
 #include <Library/SerialPortLib.h>
 #include <Library/PlatformHookLib.h>
 #include <Library/BootloaderCoreLib.h>
-#include <FsptUpd.h>
-
-const
-FSPT_UPD TempRamInitParams = {
-  .FspUpdHeader = {
-    .Signature = FSPT_UPD_SIGNATURE,
-    .Revision  = 1,
-    .Reserved  = {0},
-  },
-  .FsptCommonUpd = {
-    .Revision              = 1,
-    .MicrocodeRegionBase   = 0,
-    .MicrocodeRegionLength = 0,
-    .CodeRegionBase        = 0xFF000000,
-    .CodeRegionLength      = 0x00000000,
-  },
-  .UpdTerminator = 0x55AA,
-};
 
 /**
   Board specific hook points.

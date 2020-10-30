@@ -664,15 +664,27 @@ class Build(object):
 
     def patch_stages (self):
 
+
+        print('Patching BOOTROM')
+        extra_cmd = []
+        extra_cmd.extend ([
+            "BOOTROM:BOOTROM",
+            "0xFFFFFFFC,            _BASE_BOOTROM_,                    @Patch BotoFw BFV",
+            "_OFFS_BOOTROM_,        BootFw:__ModuleEntryPoint,         @Patch BootFw Entry",
+            "_OFFS_BOOTROM_+4,      BootFw:BASE,                       @Patch Module Base"
+        ])
+        patch_fv(self._fv_dir, *extra_cmd)
+
         print('Patching STAGE1A')
-        extra_cmd = [
+        extra_cmd = []
+        extra_cmd.extend ([
             "STAGE1A:STAGE1A",
             "0xFFFFFFFC,            _BASE_STAGE1A_,                    @Patch BFV",
             "_OFFS_STAGE1A_,        Stage1A:__ModuleEntryPoint,        @Patch Stage1A Entry",
             "_OFFS_STAGE1A_+4,      Stage1A:BASE,                      @Patch Module Base",
             "<Stage1A:__gPcd_BinaryPatch_PcdVerInfoBase>,  {3473A022-C3C2-4964-B309-22B3DFB0B6CA:0x1C}, @Patch VerInfo",
             "<Stage1A:__gPcd_BinaryPatch_PcdFileDataBase>, {EFAC3859-B680-4232-A159-F886F2AE0B83:0x1C}, @Patch PcdBase"
-        ]
+        ])
 
         if self._arch == 'X64':
             # Find signature at top 4KB
@@ -906,7 +918,7 @@ class Build(object):
         # Patch flashmap to indicate boot parititon
         fo = open(os.path.join(self._fv_dir, 'STAGE1A_B.fd'), 'r+b')
         bins = bytearray(fo.read())
-        fmapoff = (bytes_to_value(bins[-8:-4]) + len(bins)) & 0xFFFFFFFF
+        fmapoff = bytes_to_value(bins[-8:-4]) - bytes_to_value(bins[-4:])
         fmaphdr = FLASH_MAP.from_buffer (bins, fmapoff)
         if fmaphdr.sig != FLASH_MAP.FLASH_MAP_SIGNATURE:
             raise Exception ('Failed to locate flash map in STAGE1A_B.fd !')
@@ -1079,41 +1091,45 @@ class Build(object):
         if(IPP_CRYPTO_ALG_MASK[self._board._SIGN_HASH] & self._board.IPP_HASH_LIB_SUPPORTED_MASK) == 0:
             raise Exception  ('IPP_HASH_LIB_SUPPORTED_MASK is not set correctly!!')
 
-        # check if FSP binary exists
-        fsp_dir  = os.path.join(plt_dir, 'Silicon', self._board.SILICON_PKG_NAME, "FspBin", self._board._FSP_PATH_NAME)
-        work_dir = plt_dir
-        if not os.path.exists(fsp_dir):
-            fsp_dir  = os.path.join(sbl_dir, 'Silicon', self._board.SILICON_PKG_NAME, "FspBin", self._board._FSP_PATH_NAME)
-            work_dir = sbl_dir
-        fsp_path = os.path.join(fsp_dir, self._fsp_basename + '.bin')
+        if 1:
+            # check if FSP binary exists
+            fsp_dir  = os.path.join(plt_dir, 'Silicon', self._board.SILICON_PKG_NAME, "FspBin", self._board._FSP_PATH_NAME)
+            work_dir = plt_dir
+            if not os.path.exists(fsp_dir):
+                fsp_dir  = os.path.join(sbl_dir, 'Silicon', self._board.SILICON_PKG_NAME, "FspBin", self._board._FSP_PATH_NAME)
+                work_dir = sbl_dir
+            fsp_path = os.path.join(fsp_dir, self._fsp_basename + '.bin')
 
-        check_build_component_bin = os.path.join(tool_dir, 'PrepareBuildComponentBin.py')
-        if os.path.exists(check_build_component_bin):
-            ret = subprocess.call([sys.executable, check_build_component_bin, work_dir, self._board.SILICON_PKG_NAME, '/d' if self._board.FSPDEBUG_MODE else '/r'])
-            if ret:
-                raise Exception  ('Failed to prepare build component binaries !')
+            if self._board.HAVE_FSP_BIN:
+                check_build_component_bin = os.path.join(tool_dir, 'PrepareBuildComponentBin.py')
+                if os.path.exists(check_build_component_bin):
+                    ret = subprocess.call([sys.executable, check_build_component_bin, work_dir, self._board.SILICON_PKG_NAME, '/d' if self._board.FSPDEBUG_MODE else '/r'])
+                    if ret:
+                        raise Exception  ('Failed to prepare build component binaries !')
 
-        # create FSP size and UPD size can be known
-        fsp_list = ['FSP_T', 'FSP_M', 'FSP_S']
-        if self._board.HAVE_FSP_BIN:
-            split_fsp (fsp_path, self._fv_dir)
-        else:
-            # create dummy FSP files
+            # create FSP size and UPD size can be known
+            fsp_list = ['FSP_T', 'FSP_M', 'FSP_S']
+            if self._board.HAVE_FSP_BIN:
+                split_fsp (fsp_path, self._fv_dir)
+            else:
+                # create dummy FSP files
+                for each in fsp_list:
+                    open(os.path.join(self._fv_dir, each + '.bin'),'wb').close()
+
+            # generate size variables
             for each in fsp_list:
-                open(os.path.join(self._fv_dir, each + '.bin'),'wb').close()
-        # generate size variables
-        for each in fsp_list:
-            fsp_bin  = os.path.join(self._fv_dir, "%s.bin" % each)
-            if self._board.FSP_IMAGE_ID:
-                    imageid = get_fsp_image_id (fsp_bin)
-                    if self._board.FSP_IMAGE_ID != imageid:
-                            raise Exception ('Expecting FSP ImageId: %s, but got %s !' % (self._board.FSP_IMAGE_ID, imageid))
-            revision = get_fsp_revision (fsp_bin)
-            if revision < self._board.MIN_FSP_REVISION:
-                    raise Exception ('Required minimum FSP revision is 0x%08X, but current revision is 0x%08X !' %
-                                (self._board.MIN_FSP_REVISION, revision))
-            setattr(self._board, '%s_SIZE' % each, get_fsp_size(fsp_bin) if self._board.HAVE_FSP_BIN else 0)
-            setattr(self._board, '%s_UPD_SIZE' % each, get_fsp_upd_size(fsp_bin) if self._board.HAVE_FSP_BIN else 0)
+                fsp_bin  = os.path.join(self._fv_dir, "%s.bin" % each)
+                if self._board.HAVE_FSP_BIN:
+                    if self._board.FSP_IMAGE_ID:
+                            imageid = get_fsp_image_id (fsp_bin)
+                            if self._board.FSP_IMAGE_ID != imageid:
+                                    raise Exception ('Expecting FSP ImageId: %s, but got %s !' % (self._board.FSP_IMAGE_ID, imageid))
+                    revision = get_fsp_revision (fsp_bin)
+                    if revision < self._board.MIN_FSP_REVISION:
+                            raise Exception ('Required minimum FSP revision is 0x%08X, but current revision is 0x%08X !' %
+                                        (self._board.MIN_FSP_REVISION, revision))
+                setattr(self._board, '%s_SIZE' % each, get_fsp_size(fsp_bin) if self._board.HAVE_FSP_BIN else 0)
+                setattr(self._board, '%s_UPD_SIZE' % each, get_fsp_upd_size(fsp_bin) if self._board.HAVE_FSP_BIN else 0)
 
         if self._board.BUILD_CSME_UPDATE_DRIVER:
             if os.name != 'nt':

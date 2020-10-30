@@ -274,6 +274,7 @@ SecStartup2 (
 
   // Init Stage1A Param block
   ZeroMem (&Stage1aParam, sizeof (STAGE1A_PARAM));
+  Stage1aParam.HobList = Stage1aAsmParam->HobList;
 
   // Flash Map
   BufInfo  = &Stage1aParam.BufInfo[EnumBufFlashMap];

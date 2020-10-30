@@ -84,6 +84,7 @@
   gPlatformModuleTokenSpaceGuid.PcdFileDataBase
   gPlatformModuleTokenSpaceGuid.PcdVerifiedBootStage1B
   gPlatformModuleTokenSpaceGuid.PcdHashStoreSize
+  gPlatformModuleTokenSpaceGuid.PcdUseFspBinary
   gPlatformCommonLibTokenSpaceGuid.PcdPcdLibId
   gPlatformCommonLibTokenSpaceGuid.PcdCompSignHashAlg
 

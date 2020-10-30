@@ -83,6 +83,7 @@
   gPlatformModuleTokenSpaceGuid.PcdCfgDataBase
   gPlatformModuleTokenSpaceGuid.PcdCfgDatabaseSize
   gPlatformModuleTokenSpaceGuid.PcdStage1BXip
+  gPlatformModuleTokenSpaceGuid.PcdUseFspBinary
   gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel
   gPlatformModuleTokenSpaceGuid.PcdS3DebugEnabled
   gPlatformModuleTokenSpaceGuid.PcdCfgDataLoadSource

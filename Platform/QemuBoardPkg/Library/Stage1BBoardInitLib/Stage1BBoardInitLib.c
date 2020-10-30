@@ -23,7 +23,6 @@
 #include <Library/VariableLib.h>
 #include <Library/BootloaderCoreLib.h>
 #include <Library/BoardSupportLib.h>
-#include <FspmUpd.h>
 #include <BlCommon.h>
 #include <ConfigDataDefs.h>
 #include "GpioTbl.h"
@@ -50,23 +49,6 @@ UpdateFspConfig (
   IN OUT VOID        *FspUpdRgnPtr
   )
 {
-  MEMORY_CFG_DATA   *MemCfgData;
-  SILICON_CFG_DATA  *SilCfgData;
-
-  MemCfgData = (MEMORY_CFG_DATA *)FindConfigDataByTag (CDATA_MEMORY_TAG);
-  if (MemCfgData != NULL) {
-    DEBUG ((DEBUG_INFO, "Found Config TAG: 0x%03X @ 0x%08X\n", CDATA_MEMORY_TAG, MemCfgData));
-    DEBUG ((DEBUG_INFO, "  MemCfg.Test1=%08X, MemCfg.Test2=%08X\n", \
-                        MemCfgData->MemTest1, MemCfgData->MemTest2));
-  }
-
-  SilCfgData = (SILICON_CFG_DATA *)FindConfigDataByTag (CDATA_SILICON_TAG);
-  if (SilCfgData != NULL) {
-    DEBUG ((DEBUG_INFO, "Found Config TAG: 0x%03X @ 0x%08X\n", CDATA_SILICON_TAG, SilCfgData));
-    DEBUG ((DEBUG_INFO, "  SilCfg.Test1=%08X, SilCfg.Test2=%08X\n", \
-                        SilCfgData->SiliconTest1, SilCfgData->SiliconTest2));
-  }
-
 }
 
 /**

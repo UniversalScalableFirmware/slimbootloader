@@ -28,7 +28,6 @@
 #include <Guid/SystemTableInfoGuid.h>
 #include <Guid/SerialPortInfoGuid.h>
 #include <Guid/SmmInformationGuid.h>
-#include <FspsUpd.h>
 #include <BlCommon.h>
 #include <GlobalNvsArea.h>
 #include <PlatformBase.h>
@@ -282,23 +281,6 @@ UpdateFspConfig (
   IN OUT VOID        *FspUpdRgnPtr
   )
 {
-  FSPS_UPD           *FspsUpd;
-  FSP_S_CONFIG       *FspsConfig;
-  SILICON_CFG_DATA   *SilCfgData;
-
-  FspsUpd    = (FSPS_UPD *)FspUpdRgnPtr;
-  FspsConfig = &FspsUpd->FspsConfig;
-
-  if (PcdGetBool (PcdFramebufferInitEnabled)) {
-    FspsConfig->GraphicsConfigPtr = (UINT32)GetVbtAddress ();
-  } else {
-    FspsConfig->GraphicsConfigPtr = 0;
-  }
-
-  SilCfgData = (SILICON_CFG_DATA *)FindConfigDataByTag (CDATA_SILICON_TAG);
-  if (SilCfgData == NULL) {
-    return;
-  }
 }
 
 /**

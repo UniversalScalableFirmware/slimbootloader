@@ -54,6 +54,8 @@ class Board(BaseBoard):
 
         self.HAVE_VERIFIED_BOOT       = 1
         self.HAVE_VBT_BIN             = 1
+        self.HAVE_FSP_BIN             = 0
+
         self.ENABLE_SPLASH            = 1
         self.ENABLE_FRAMEBUFFER_INIT  = 1
         self.ENABLE_FWU               = 1
@@ -101,6 +103,7 @@ class Board(BaseBoard):
         self.STAGE1B_SIZE         = 0x00030000
         self.STAGE2_SIZE          = 0x00018000
 
+        self.BOOT_ROM_SIZE        = 0x00070000
         self.TEST_SIZE            = 0x00001000
         self.SIIPFW_SIZE          = 0x00010000
         self.EPAYLOAD_SIZE        = 0x0020D000
@@ -119,7 +122,7 @@ class Board(BaseBoard):
             self.NON_VOLATILE_SIZE  = 0x000000
             self.NON_REDUNDANT_SIZE = 0x400000
         else:
-            self.TOP_SWAP_SIZE      = 0x010000
+            self.TOP_SWAP_SIZE      = 0x080000
             self.REDUNDANT_SIZE     = 0x080000
             self.NON_VOLATILE_SIZE  = 0x001000
             self.NON_REDUNDANT_SIZE = 0x2DF000
@@ -312,12 +315,15 @@ class Board(BaseBoard):
                     ('KEYHASH.bin'  ,  ''        , self.KEYHASH_SIZE,  STITCH_OPS.MODE_FILE_PAD, STITCH_OPS.MODE_POS_TAIL),
                     ]
                 ),
+
                 ('TOP_SWAP_A.bin', [
                     ('STAGE1A_A.fd'      , ''      , self.STAGE1A_SIZE,  STITCH_OPS.MODE_FILE_NOP, STITCH_OPS.MODE_POS_TAIL),
+                    ('BOOTROM.fd'        , ''      , self.BOOT_ROM_SIZE,    STITCH_OPS.MODE_FILE_NOP, STITCH_OPS.MODE_POS_TAIL),
                     ]
                 ),
                 ('TOP_SWAP_B.bin', [
                     ('STAGE1A_B.fd'      , ''      , self.STAGE1A_SIZE,  STITCH_OPS.MODE_FILE_NOP, STITCH_OPS.MODE_POS_TAIL),
+                    ('BOOTROM.fd'        , ''      , self.BOOT_ROM_SIZE,    STITCH_OPS.MODE_FILE_NOP, STITCH_OPS.MODE_POS_TAIL),
                     ]
                 ),
                 ('SlimBootloader.bin', [
