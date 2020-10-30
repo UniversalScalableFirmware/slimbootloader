@@ -664,17 +664,6 @@ class Build(object):
 
     def patch_stages (self):
 
-
-        print('Patching BOOTROM')
-        extra_cmd = []
-        extra_cmd.extend ([
-            "BOOTROM:BOOTROM",
-            "0xFFFFFFFC,            _BASE_BOOTROM_,                    @Patch BotoFw BFV",
-            "_OFFS_BOOTROM_,        BootFw:__ModuleEntryPoint,         @Patch BootFw Entry",
-            "_OFFS_BOOTROM_+4,      BootFw:BASE,                       @Patch Module Base"
-        ])
-        patch_fv(self._fv_dir, *extra_cmd)
-
         print('Patching STAGE1A')
         extra_cmd = []
         extra_cmd.extend ([

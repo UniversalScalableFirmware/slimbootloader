@@ -12,24 +12,6 @@ DEFINE FV_DIR                 = $(OUTPUT_DIRECTORY)/$(TARGET)_$(TOOL_CHAIN_TAG)/
 DEFINE ARCH_DIR               = $(OUTPUT_DIRECTORY)/$(TARGET)_$(TOOL_CHAIN_TAG)/$(ARCH)
 
 
-#------------------------------------------------------------------------------
-# STAGE1A FD
-#   STAGE1A_FD_BASE, STAGE1A_FD_SIZE, STAGE1A_FD_NUMBLK
-#------------------------------------------------------------------------------
-[FD.BOOTROM]
-BaseAddress   = 0xFFF90000
-Size          = 0x70000
-BlockSize     = $(FLASH_BLOCK_SIZE)
-NumBlocks     = 0x70
-ErasePolarity = $(FLASH_ERASE_POLARITY)
-
-0x00000 | 0x40000
-FILE = Silicon/QemuSocPkg/FspBin/FspRel.bin
-
-0x40000 | 0x30000
-FV = BOOTROM
-
-
 [FD.STAGE1A]
 BaseAddress   = $(STAGE1A_FD_BASE)
 Size          = $(STAGE1A_FD_SIZE)
@@ -95,32 +77,6 @@ ErasePolarity = $(FLASH_ERASE_POLARITY)
 
 0x00000000 | $(OS_LOADER_FD_SIZE)
 FV = OsLoader
-
-#------------------------------------------------------------------------------
-# BOOTROM FV
-#------------------------------------------------------------------------------
-[FV.BOOTROM]
-  BlockSize          = $(FLASH_BLOCK_SIZE)
-  FvAlignment        = 16
-  ERASE_POLARITY     = 1
-  MEMORY_MAPPED      = TRUE
-  STICKY_WRITE       = TRUE
-  LOCK_CAP           = TRUE
-  LOCK_STATUS        = TRUE
-  WRITE_DISABLED_CAP = TRUE
-  WRITE_ENABLED_CAP  = TRUE
-  WRITE_STATUS       = TRUE
-  WRITE_LOCK_CAP     = TRUE
-  WRITE_LOCK_STATUS  = TRUE
-  READ_DISABLED_CAP  = TRUE
-  READ_ENABLED_CAP   = TRUE
-  READ_STATUS        = TRUE
-  READ_LOCK_CAP      = TRUE
-  READ_LOCK_STATUS   = TRUE
-
-  INF BootloaderCorePkg/BootFw/BootFw.inf
-
-  INF RuleOverride = RESET_VECTOR USE = $(ARCH) BootloaderCorePkg/BootFw/Ia32/Vtf0/Bin/ResetVector.inf
 
 
 #------------------------------------------------------------------------------

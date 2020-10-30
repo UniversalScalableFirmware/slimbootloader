@@ -394,12 +394,14 @@ SecStartup (
     DEBUG ((DEBUG_INFO, "%X\n", SubStatus));
   }
 
-  DEBUG ((DEBUG_INIT, "Silicon Init\n"));
-  AddMeasurePoint (0x3020);
-  Status = CallFspSiliconInit ();
-  AddMeasurePoint (0x3030);
-  FspResetHandler (Status);
-  ASSERT_EFI_ERROR (Status);
+  if (FeaturePcdGet (PcdUseFspBinary)) {
+    DEBUG ((DEBUG_INIT, "Silicon Init\n"));
+    AddMeasurePoint (0x3020);
+    Status = CallFspSiliconInit ();
+    AddMeasurePoint (0x3030);
+    FspResetHandler (Status);
+    ASSERT_EFI_ERROR (Status);
+  }
 
   if (FixedPcdGetBool (PcdSmbiosEnabled)) {
     InitSmbiosStringPtr ();

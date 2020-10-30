@@ -184,6 +184,10 @@ class Board(BaseBoard):
           with open(file, 'wb') as fd:
               fd.write(bins)
 
+        if not self.HAVE_FSP_BIN:
+          fsp_path  = os.path.join('Silicon', self.SILICON_PKG_NAME, "FspBin", "FspBootRom.fd")
+          shutil.copy (fsp_path, build._fv_dir + '/FSPBOOTROM.bin')
+
     def GetPlatformDsc (self):
         dsc = {}
         dsc['LibraryClasses.%s' % self.BUILD_ARCH] = [
@@ -318,12 +322,12 @@ class Board(BaseBoard):
 
                 ('TOP_SWAP_A.bin', [
                     ('STAGE1A_A.fd'      , ''      , self.STAGE1A_SIZE,  STITCH_OPS.MODE_FILE_NOP, STITCH_OPS.MODE_POS_TAIL),
-                    ('BOOTROM.fd'        , ''      , self.BOOT_ROM_SIZE,    STITCH_OPS.MODE_FILE_NOP, STITCH_OPS.MODE_POS_TAIL),
+                    ('FSPBOOTROM.bin'     , ''      , self.BOOT_ROM_SIZE,    STITCH_OPS.MODE_FILE_NOP, STITCH_OPS.MODE_POS_TAIL),
                     ]
                 ),
                 ('TOP_SWAP_B.bin', [
                     ('STAGE1A_B.fd'      , ''      , self.STAGE1A_SIZE,  STITCH_OPS.MODE_FILE_NOP, STITCH_OPS.MODE_POS_TAIL),
-                    ('BOOTROM.fd'        , ''      , self.BOOT_ROM_SIZE,    STITCH_OPS.MODE_FILE_NOP, STITCH_OPS.MODE_POS_TAIL),
+                    ('FSPBOOTROM.bin'     , ''      , self.BOOT_ROM_SIZE,    STITCH_OPS.MODE_FILE_NOP, STITCH_OPS.MODE_POS_TAIL),
                     ]
                 ),
                 ('SlimBootloader.bin', [

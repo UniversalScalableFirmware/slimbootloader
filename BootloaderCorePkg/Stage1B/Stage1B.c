@@ -654,10 +654,12 @@ ContinueFunc (
            ));
   DEBUG_CODE_END ();
 
-  AddMeasurePoint (0x2050);
-  Status = CallFspTempRamExit (PCD_GET32_WITH_ADJUST (PcdFSPMBase), NULL);
-  AddMeasurePoint (0x2060);
-  ASSERT_EFI_ERROR (Status);
+  if (FeaturePcdGet (PcdUseFspBinary)) {
+    AddMeasurePoint (0x2050);
+    Status = CallFspTempRamExit (PCD_GET32_WITH_ADJUST (PcdFSPMBase), NULL);
+    AddMeasurePoint (0x2060);
+    ASSERT_EFI_ERROR (Status);
+  }
 
   BoardInit (PostTempRamExit);
   AddMeasurePoint (0x2070);

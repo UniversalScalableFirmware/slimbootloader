@@ -349,11 +349,6 @@
   #
   BootloaderCorePkg/PcdData/PcdData.inf
 
-  BootloaderCorePkg/BootFw/Ia32/Vtf0/Bin/ResetVector.inf
-
-  BootloaderCorePkg/BootFw/BootFw.inf
-
-
   BootloaderCorePkg/Stage1A/Stage1A.inf {
     <PcdsFeatureFlag>
       gPlatformCommonLibTokenSpaceGuid.PcdMinDecompression | TRUE
