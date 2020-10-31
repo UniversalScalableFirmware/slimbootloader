@@ -103,7 +103,7 @@ class Board(BaseBoard):
         self.STAGE1B_SIZE         = 0x00030000
         self.STAGE2_SIZE          = 0x00018000
 
-        self.BOOT_ROM_SIZE        = 0x00070000
+        self.BOOT_ROM_SIZE        = 0x00040000
         self.TEST_SIZE            = 0x00001000
         self.SIIPFW_SIZE          = 0x00010000
         self.EPAYLOAD_SIZE        = 0x0020D000
