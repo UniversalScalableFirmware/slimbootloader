@@ -16,6 +16,7 @@ sys.dont_write_bytecode = True
 sys.path.append (os.path.join('..', '..'))
 from BuildLoader import BaseBoard, STITCH_OPS, HASH_USAGE
 from BuildLoader import IPP_CRYPTO_OPTIMIZATION_MASK, IPP_CRYPTO_ALG_MASK, HASH_TYPE_VALUE
+from BuildLoader import bytes_to_value, run_process
 
 class Board(BaseBoard):
 
@@ -184,9 +185,25 @@ class Board(BaseBoard):
           with open(file, 'wb') as fd:
               fd.write(bins)
 
-        if not self.HAVE_FSP_BIN:
-          fsp_path  = os.path.join('Silicon', self.SILICON_PKG_NAME, "FspBin", "FspBootRom.fd")
-          shutil.copy (fsp_path, build._fv_dir + '/FSPBOOTROM.bin')
+        if phase == 'post-build:patch':
+          if not self.HAVE_FSP_BIN:
+            fsp_path  = os.path.join('Silicon', self.SILICON_PKG_NAME, "FspBin", "FspBootRom.fd")
+            shutil.copy (fsp_path, build._fv_dir + '/FSPBOOTROM.fd')
+
+            # Patch OEM entry point into FSP-R UPD
+            fd = open (build._fv_dir + '/STAGE1A.fd', 'rb')
+            entrypoint = bytes_to_value (fd.read(4))
+            fd.close()
+            fd = open (build._fv_dir + '/FspR.dlt', 'w')
+            fd.write('FSPR_UPD.FSP_R_CONFIG.OemEntryPoint | 0x%08X' % entrypoint)
+            fd.close ()
+            run_process ([
+                sys.executable,
+                'IntelFsp2Pkg/Tools/GenCfgData.py',
+                'GENBIN',
+                '%s;%s;%s' % ('Silicon/QemuSocPkg/FspBin/Fsp.yaml', build._fv_dir + '/FspR.dlt', build._fv_dir + '/FSPBOOTROM.fd'),
+                build._fv_dir + '/FSPBOOTROM.bin'
+              ])
 
     def GetPlatformDsc (self):
         dsc = {}

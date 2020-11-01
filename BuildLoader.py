@@ -1322,6 +1322,9 @@ class Build(object):
         # patch stages
         self.patch_stages ()
 
+        # call hook
+        self.board_build_hook ('post-build:patch')
+
         # create redundant components
         self.create_redundant_components ()
 
