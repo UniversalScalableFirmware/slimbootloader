@@ -97,7 +97,7 @@ class Board(BaseBoard):
 
         self.STAGE1A_SIZE         = 0x00010000
         self.STAGE1B_SIZE         = 0x00030000
-        self.STAGE2_SIZE          = 0x00018000
+        self.STAGE2_SIZE          = 0x00030000
 
         self.TEST_SIZE            = 0x00001000
         self.SIIPFW_SIZE          = 0x00010000
