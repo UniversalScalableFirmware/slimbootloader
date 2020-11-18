@@ -143,7 +143,7 @@ def BuildFspBins (fsp_dir, sbl_dir, silicon_pkg_name, flag):
     copy_list = []
     if silicon_pkg_name == 'QemuSocPkg':
         copy_list.extend ([
-          ('BuildFsp/QEMU_FSP.bsf',        'Silicon/QemuSocPkg/FspBin/Fsp.bsf'),
+          ('BuildFsp/QEMU_FSP.yaml',        'Silicon/QemuSocPkg/FspBin/Fsp.yaml'),
           ('BuildFsp/QEMU_FSP_DEBUG.fd',   'Silicon/QemuSocPkg/FspBin/FspDbg.bin'),
           ('BuildFsp/QEMU_FSP_RELEASE.fd', 'Silicon/QemuSocPkg/FspBin/FspRel.bin')
         ])
