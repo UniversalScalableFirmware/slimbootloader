@@ -470,7 +470,7 @@ class FspImage:
         self.FihOffset = fihoff
         self.Offset    = offset
         self.FvIdxList = []
-        self.Type      = "XTMSXXXXOXXXXXXX"[(fih.ComponentAttribute >> 12) & 0x0F]
+        self.Type      = "XTMSIXXXOXXXXXXX"[(fih.ComponentAttribute >> 12) & 0x0F]
         self.PatchList = patch
         self.PatchList.append(fihoff + 0x1C)
 
@@ -847,7 +847,7 @@ def main ():
     parser_rebase  = subparsers.add_parser('rebase',  help='rebase a FSP into a new base address')
     parser_rebase.set_defaults(which='rebase')
     parser_rebase.add_argument('-f',  '--fspbin' , dest='FspBinary',  type=str, help='FSP binary file path', required = True)
-    parser_rebase.add_argument('-c',  '--fspcomp', choices=['t','m','s','o'],  nargs='+', dest='FspComponent', type=str, help='FSP component to rebase', default = "['t']", required = True)
+    parser_rebase.add_argument('-c',  '--fspcomp', choices=['t','m','s','o', 'i'],  nargs='+', dest='FspComponent', type=str, help='FSP component to rebase', default = "['t']", required = True)
     parser_rebase.add_argument('-b',  '--newbase', dest='FspBase', nargs='+', type=str, help='Rebased FSP binary file name', default = '', required = True)
     parser_rebase.add_argument('-o',  '--outdir' , dest='OutputDir',  type=str, help='Output directory path', default = '.')
     parser_rebase.add_argument('-n',  '--outfile', dest='OutputFile', type=str, help='Rebased FSP binary file name', default = '')

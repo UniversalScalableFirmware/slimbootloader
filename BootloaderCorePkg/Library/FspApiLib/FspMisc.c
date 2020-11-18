@@ -58,5 +58,8 @@ RebaseFspComponent (
   FspHeader = (FSP_INFO_HEADER *)(UINTN)(PcdGet32 (PcdFSPSBase) + Delta + FSP_INFO_HEADER_OFF);
   FspHeader->ImageBase += Delta;
 
+  FspHeader = (FSP_INFO_HEADER *)(UINTN)(PcdGet32 (PcdFSPIBase) + Delta + FSP_INFO_HEADER_OFF);
+  FspHeader->ImageBase += Delta;
+
   return EFI_SUCCESS;
 }

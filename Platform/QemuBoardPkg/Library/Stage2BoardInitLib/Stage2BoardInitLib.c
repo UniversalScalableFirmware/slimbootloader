@@ -22,6 +22,7 @@
 #include <Library/BootloaderCoreLib.h>
 #include <Library/BlMemoryAllocationLib.h>
 #include <Library/FspSupportLib.h>
+#include <Library/FspApiLib.h>
 #include <Library/BoardSupportLib.h>
 #include <Library/ContainerLib.h>
 #include <Guid/GraphicsInfoHob.h>
@@ -233,6 +234,10 @@ BoardInit (
     if (!EFI_ERROR(Status)) {
       DumpHex (2, 0, Length > 16 ? 16 : Length, Buffer);
     }
+    break;
+
+  case PostSiliconInit:
+    CallFspSmmInit ();
     break;
 
   case PostPciEnumeration:

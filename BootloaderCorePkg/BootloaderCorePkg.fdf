@@ -68,6 +68,11 @@ $(FSP_S_OFFSET) | $(FSP_S_SIZE)
 FILE = $(FV_DIR)/FSP_S.bin
 !endif
 
+!if $(FSP_I_SIZE) > 0
+$(FSP_I_OFFSET) | $(FSP_I_SIZE)
+FILE = $(FV_DIR)/FSP_I.bin
+!endif
+
 #------------------------------------------------------------------------------
 # OsLoader FD
 #------------------------------------------------------------------------------

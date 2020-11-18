@@ -50,6 +50,7 @@
 [Pcd]
   gPlatformModuleTokenSpaceGuid.PcdFSPMBase
   gPlatformModuleTokenSpaceGuid.PcdFSPSBase
+  gPlatformModuleTokenSpaceGuid.PcdFSPIBase
   gPlatformModuleTokenSpaceGuid.PcdFSPMStackTop
 
 [FixedPcd]

@@ -217,6 +217,7 @@
   gPlatformModuleTokenSpaceGuid.PcdFSPSSize               | $(FSP_S_SIZE)
   gPlatformModuleTokenSpaceGuid.PcdFSPSUpdSize            | $(FSP_S_UPD_SIZE)
   gPlatformModuleTokenSpaceGuid.PcdFSPMStackTop           | $(FSP_M_STACK_TOP)
+  gPlatformModuleTokenSpaceGuid.PcdFSPISize               | $(FSP_I_SIZE)
 
   gPlatformModuleTokenSpaceGuid.PcdTopSwapRegionSize      | $(TOP_SWAP_SIZE)
   gPlatformModuleTokenSpaceGuid.PcdRedundantRegionSize    | $(REDUNDANT_SIZE)
@@ -260,6 +261,7 @@
   gPlatformModuleTokenSpaceGuid.PcdDeviceTreeBase    | 0xFF000000
   gPlatformCommonLibTokenSpaceGuid.PcdAcpiPmTimerBase   | $(ACPI_PM_TIMER_BASE)
   gPlatformModuleTokenSpaceGuid.PcdFSPSBase          | $(FSP_S_BASE)
+  gPlatformModuleTokenSpaceGuid.PcdFSPIBase          | $(FSP_I_BASE)
   gPlatformModuleTokenSpaceGuid.PcdHashStoreBase     | 0xFF000000
   gPlatformModuleTokenSpaceGuid.PcdVerInfoBase       | 0xFF000000
   gPlatformModuleTokenSpaceGuid.PcdFileDataBase      | 0xFF000000

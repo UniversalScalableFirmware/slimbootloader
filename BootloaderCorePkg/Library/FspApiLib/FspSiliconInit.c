@@ -70,3 +70,43 @@ CallFspSiliconInit (
 
   return Status;
 }
+
+/**
+  This FSP API is called after FspSiliconInit API.
+  FspMemoryInit, TempRamExit and FspSiliconInit APIs provide an alternate method to complete the
+  silicon initialization.
+
+
+  @retval EFI_SUCCESS                 FSP execution environment was initialized successfully.
+  @retval EFI_INVALID_PARAMETER       Input parameters are invalid.
+  @retval EFI_UNSUPPORTED             The FSP calling conditions were not met.
+  @retval EFI_DEVICE_ERROR            FSP initialization failed.
+  @retval FSP_STATUS_RESET_REQUIREDx  A reset is reuired. These status codes will not be returned during S3.
+**/
+EFI_STATUS
+EFIAPI
+CallFspSmmInit (
+  VOID
+  )
+{
+  FSP_INFO_HEADER            *FspHeader;
+  FSP_SMM_INIT                FspSmmInit;
+  EFI_STATUS                  Status;
+
+  FspHeader = (FSP_INFO_HEADER *)(UINTN)(PcdGet32 (PcdFSPIBase) + FSP_INFO_HEADER_OFF);
+  DEBUG ((DEBUG_INFO, "FSP-I... %x\n", FspHeader));
+  DEBUG ((DEBUG_INFO, "FSP-I... %x\n", FspHeader->ComponentAttribute));
+
+  ASSERT (FspHeader->Signature == FSP_INFO_HEADER_SIGNATURE);
+  ASSERT (FspHeader->ImageBase == PcdGet32 (PcdFSPIBase));
+
+  ASSERT (FspHeader->FspSiliconInitEntryOffset != 0);
+  FspSmmInit = (FSP_SMM_INIT)(UINTN)(FspHeader->ImageBase + \
+                                             FspHeader->FspSiliconInitEntryOffset);
+
+  DEBUG ((DEBUG_INFO, "Call FspSmmInit "));
+  Status = FspSmmInit ((UINTN)(0));
+  DEBUG ((DEBUG_INFO, " ... %r\n", Status));
+
+  return Status;
+}

@@ -43,6 +43,7 @@
   VariableLib
   GpioLib
   BoardSupportLib
+  FspApiLib
 
 [Guids]
   gReservedMemoryResourceHobTsegGuid

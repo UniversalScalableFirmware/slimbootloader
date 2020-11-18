@@ -47,6 +47,7 @@
 
 [Pcd]
   gPlatformModuleTokenSpaceGuid.PcdFSPSBase
+  gPlatformModuleTokenSpaceGuid.PcdFSPIBase
   gPlatformModuleTokenSpaceGuid.PcdFspsUpdPtr
 
 [FixedPcd]

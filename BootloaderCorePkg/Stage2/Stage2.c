@@ -368,6 +368,7 @@ SecStartup (
   Stage2Param = (STAGE2_PARAM *)Params;
   Delta = Stage2Param->Stage2ExeBase - PCD_GET32_WITH_ADJUST (PcdStage2FdBase);
   Status = PcdSet32S (PcdFSPSBase,             PCD_GET32_WITH_ADJUST (PcdFSPSBase) + Delta);
+  Status = PcdSet32S (PcdFSPIBase,             PCD_GET32_WITH_ADJUST (PcdFSPIBase) + Delta);  
   Status = PcdSet32S (PcdAcpiTablesAddress,    PCD_GET32_WITH_ADJUST (PcdAcpiTablesAddress) + Delta);
   Status = PcdSet32S (PcdGraphicsVbtAddress,   PCD_GET32_WITH_ADJUST (PcdGraphicsVbtAddress) + Delta);
   Status = PcdSet32S (PcdSplashLogoAddress,    PCD_GET32_WITH_ADJUST (PcdSplashLogoAddress) + Delta);

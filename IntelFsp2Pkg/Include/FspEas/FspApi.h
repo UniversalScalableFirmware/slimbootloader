@@ -439,6 +439,26 @@ EFI_STATUS
 
 
 /**
+  This FSP API is called after FspSiliconInit API.
+  FspMemoryInit, TempRamExit and FspSiliconInit APIs provide an alternate method to complete the
+  silicon initialization.
+
+  @param[in] FspmmsUpdDataPtr     Pointer to the FSPSMM_UPD data structure.
+                                  If NULL, FSP will use the default parameters.
+
+  @retval EFI_SUCCESS                 FSP execution environment was initialized successfully.
+  @retval EFI_INVALID_PARAMETER       Input parameters are invalid.
+  @retval EFI_UNSUPPORTED             The FSP calling conditions were not met.
+  @retval EFI_DEVICE_ERROR            FSP initialization failed.
+  @retval FSP_STATUS_RESET_REQUIREDx  A reset is required. These status codes will not be returned during S3.
+**/
+typedef
+EFI_STATUS
+(EFIAPI *FSP_SMM_INIT) (
+  IN  VOID    *FspsmmUpdDataPtr
+  );
+
+/**
   This FSP API is called after TempRamExit API.
   FspMemoryInit, TempRamExit and FspSiliconInit APIs provide an alternate method to complete the
   silicon initialization.
@@ -457,6 +477,7 @@ EFI_STATUS
 (EFIAPI *FSP_SILICON_INIT) (
   IN  VOID    *FspsUpdDataPtr
   );
+
 
 /**
   This FSP API is expected to be called after FspSiliconInit but before FspNotifyPhase.

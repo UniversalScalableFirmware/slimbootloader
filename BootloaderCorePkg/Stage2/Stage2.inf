@@ -110,6 +110,7 @@
   gPlatformModuleTokenSpaceGuid.PcdSmpEnabled
   gPlatformModuleTokenSpaceGuid.PcdPciEnumEnabled
   gPlatformModuleTokenSpaceGuid.PcdFSPSBase
+  gPlatformModuleTokenSpaceGuid.PcdFSPIBase
   gPlatformModuleTokenSpaceGuid.PcdFlashBaseAddress
   gPlatformModuleTokenSpaceGuid.PcdFlashSize
   gPlatformModuleTokenSpaceGuid.PcdSplashEnabled
