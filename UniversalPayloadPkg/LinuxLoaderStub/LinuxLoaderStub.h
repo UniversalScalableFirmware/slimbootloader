@@ -23,6 +23,23 @@
 
 #define DEF_CMD_LINE      "init=/init root=/dev/ram0 rw 3 console=ttyS0,115200 console=tty0"
 
+#define LINUX_HDR_SIGNATURE      SIGNATURE_32 ('L', 'N', 'X', 'H')
+
+typedef struct {
+  UINT32    Off;
+  UINT32    Len;
+} LOCATION;
+
+typedef struct {
+  UINT32    Signature;
+  UINT8     Rev;
+  UINT8     Length;
+  UINT8     Rsvd[2];
+  LOCATION  CmdLine;
+  LOCATION  Kernel;
+  LOCATION  InitRd;
+} LINUX_COMP_HDR;
+
 /**
   Load linux kernel image to specified address and setup boot parameters.
 
