@@ -146,7 +146,7 @@ LoadUniversalPayload (
   IN  UINTN                    ImageBase,
   OUT UNIVERSAL_PAYLOAD_ENTRY  *PldEntry,
   OUT UINT32                   *PldBase,
-  OUT UINT32                   *PldMachine
+  OUT UINT16                   *PldMachine
 )
 {
   EFI_STATUS              Status;
