@@ -14,42 +14,11 @@
 #include <Standard/Elf32.h>
 #include <Standard/Elf64.h>
 
-#if defined (MDE_CPU_IA32)
-
-typedef Elf32_Shdr      Elf_Shdr;
-typedef Elf32_Ehdr      Elf_Ehdr;
-typedef Elf32_Rel       Elf_Rel;
-typedef Elf32_Sym       Elf_Sym;
-typedef Elf32_Phdr      Elf_Phdr;
-typedef Elf32_Dyn       Elf_Dyn;
-#define ELFCLASS        ELFCLASS32
-#define ELF_R_TYPE(r)   ELF32_R_TYPE(r)
-#define ELF_R_SYM(r)    ELF32_R_SYM(r)
-#define ELF_EM          EM_386
-
-#elif defined (MDE_CPU_X64)
-
-typedef Elf64_Shdr      Elf_Shdr;
-typedef Elf64_Ehdr      Elf_Ehdr;
-typedef Elf64_Rel       Elf_Rel;
-typedef Elf64_Rela      Elf_Rela;
-typedef Elf64_Sym       Elf_Sym;
-typedef Elf64_Phdr      Elf_Phdr;
-typedef Elf64_Dyn       Elf_Dyn;
-
-#define ELFCLASS        ELFCLASS64
-#define ELF_R_TYPE(r)   ELF64_R_TYPE(r)
-#define ELF_R_SYM(r)    ELF64_R_SYM(r)
-#define ELF_EM          EM_X86_64
-
-#else
-#error Unknown Processor Type
-#endif
-
 typedef struct {
   UINT8      *ImageBase;
   UINT32      ShStrOff;
   UINT32      ShStrLen;
+  UINT8       EiClass;
 } ELF_IMAGE_CONTEXT;
 
 /**
@@ -106,7 +75,6 @@ RelocateElfImage (
   OUT       VOID                 **EntryPoint
   );
 
-
 EFI_STATUS
 EFIAPI
 ParseElfImage (
@@ -116,31 +84,43 @@ ParseElfImage (
 
 CHAR8 *
 EFIAPI
-GetSectionName (
+GetElfSectionName (
   IN  ELF_IMAGE_CONTEXT    *ElfCt,
   IN  UINT32                SecIdx
   );
-
-Elf32_Shdr *
-EFIAPI
-GetSectionByIndex (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SecIdx
-);
-
-Elf32_Shdr *
-EFIAPI
-GetSectionByName (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  CHAR8                *Name
-);
 
 EFI_STATUS
 EFIAPI
 RelocateElfSections  (
-  IN    ELF_IMAGE_CONTEXT      *ElfCt
-  );
+  IN  ELF_IMAGE_CONTEXT    *ElfCt
+);
 
+Elf32_Shdr *
+EFIAPI
+GetElf32SectionByIndex (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  IN  UINT32                SecIdx
+);
 
+Elf64_Shdr *
+EFIAPI
+GetElf64SectionByIndex (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  IN  UINT32                SecIdx
+);
+
+Elf32_Shdr *
+EFIAPI
+GetElf32SectionByName (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  IN  CHAR8                *Name
+);
+
+Elf64_Shdr *
+EFIAPI
+GetElf64SectionByName (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  IN  CHAR8                *Name
+);
 
 #endif /* __ELF_LIB_H__ */

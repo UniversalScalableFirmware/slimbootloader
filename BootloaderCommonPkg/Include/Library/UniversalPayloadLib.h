@@ -15,8 +15,8 @@
 
 typedef struct {
   UPLD_INFO_HEADER                Info;
-  UINT16                          Machine;
-  UINT16                          ImageCount;
+  UINT32                          Machine;
+  UINT32                          ImageCount;
   UNIVERSAL_PAYLOAD_ENTRYPOINT    EntryPoint;
   PAYLOAD_IMAGE_ENTRY             LoadedImage[MAX_PLD_IMAGE_ENTRY];
 } LOADED_PAYLOAD_INFO;

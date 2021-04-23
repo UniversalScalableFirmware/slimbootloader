@@ -21,6 +21,9 @@
 
 [Sources]
   ElfLib.c
+  Elf32Lib.c
+  Elf64Lib.c
+  ElfLibInternal.h
 
 [Packages]
   MdePkg/MdePkg.dec
