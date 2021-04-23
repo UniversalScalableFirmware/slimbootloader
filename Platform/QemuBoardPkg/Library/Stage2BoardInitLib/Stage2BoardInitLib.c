@@ -212,13 +212,15 @@ BoardInit (
   switch (InitPhase) {
   case PreSiliconInit:
     GpioInit ();
-    SpiConstructor ();
     EnableLegacyRegions ();
+    /*
+    SpiConstructor ();
     VariableConstructor (PcdGet32 (PcdVariableRegionBase), PcdGet32 (PcdVariableRegionSize));
     if (!FeaturePcdGet (PcdStage1BXip)) {
       Status = TestVariableService ();
       ASSERT_EFI_ERROR (Status);
     }
+    */
     // Get TSEG info from FSP HOB
     // It will be consumed in MpInit if SMM rebase is enabled
     LdrGlobal  = (LOADER_GLOBAL_DATA *)GetLoaderGlobalDataPointer ();

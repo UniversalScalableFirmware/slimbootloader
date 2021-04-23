@@ -45,7 +45,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 typedef UINT32  Elf32_Addr;
 typedef UINT16  Elf32_Half;
 typedef UINT32  Elf32_Off;
-typedef INT32    Elf32_Sword;
+typedef INT32   Elf32_Sword;
 typedef UINT32  Elf32_Word;
 typedef UINT64  Elf32_Lword;
 
@@ -86,7 +86,7 @@ typedef struct {
   Elf32_Word  sh_type;  /* Section type. */
   Elf32_Word  sh_flags;  /* Section flags. */
   Elf32_Addr  sh_addr;  /* Address in memory image. */
-  Elf32_Off  sh_offset;  /* Offset in file. */
+  Elf32_Off   sh_offset;  /* Offset in file. */
   Elf32_Word  sh_size;  /* Size in bytes. */
   Elf32_Word  sh_link;  /* Index of a related section. */
   Elf32_Word  sh_info;  /* Depends on section type. */
@@ -100,7 +100,7 @@ typedef struct {
 
 typedef struct {
   Elf32_Word  p_type;    /* Entry type. */
-  Elf32_Off  p_offset;  /* File offset of contents. */
+  Elf32_Off   p_offset;  /* File offset of contents. */
   Elf32_Addr  p_vaddr;  /* Virtual address in memory image. */
   Elf32_Addr  p_paddr;  /* Physical address (not used). */
   Elf32_Word  p_filesz;  /* Size of contents in file. */

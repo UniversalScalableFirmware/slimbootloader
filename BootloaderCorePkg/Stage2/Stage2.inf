@@ -94,6 +94,7 @@
   gLoaderMpCpuTaskInfoGuid
   gEfiAcpi20TableGuid
   gEfiSmbios3TableGuid
+  gLoadedPayloadImageInfoGuid
 
 [Pcd]
   gPlatformCommonLibTokenSpaceGuid.PcdMaxLibraryDataEntry

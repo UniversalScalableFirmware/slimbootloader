@@ -49,7 +49,7 @@ class Board(BaseBoard):
         #self._PCI_ENUM_BUS_SCAN_TYPE    = 1
         self._PCI_ENUM_BUS_SCAN_ITEMS = '0,10,0x35,128,0xff'
         self.PCI_IO_BASE              = 0x00002000
-        self.PCI_MEM32_BASE           = 0x80000000
+        self.PCI_MEM32_BASE           = 0xF0000000
         self.USB_KB_POLLING_TIMEOUT   = 10
 
         self.HAVE_VERIFIED_BOOT       = 1

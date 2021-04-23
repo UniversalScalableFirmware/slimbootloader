@@ -139,7 +139,6 @@ NormalBootPath (
   PAYLOAD_ENTRY                   PldEntry;
   VOID                           *PldHobList;
   UINTN                           PldBase;
-  UINT32                          TmpBase;
   LOADER_GLOBAL_DATA             *LdrGlobal;
   EFI_STATUS                      Status;
   BOOLEAN                         CallBoardNotify;
@@ -149,7 +148,10 @@ NormalBootPath (
   UINT8                          *CmdLine;
   UINT32                          CmdLineLen;
   UINT32                          UefiSig;
+  UINT32                          HobSize;
   UINT16                          PldMachine;
+  LOADED_PAYLOAD_INFO             PayloadInfo;
+  LOADED_PAYLOAD_IMAGE_INFO      *PldImgInfo;
 
   LdrGlobal = (LOADER_GLOBAL_DATA *)GetLoaderGlobalDataPointer();
 
@@ -168,23 +170,7 @@ NormalBootPath (
   PldMachine = IS_X64 ? IMAGE_FILE_MACHINE_X64 : IMAGE_FILE_MACHINE_I386;
 
   Status  = EFI_SUCCESS;
-  if (Dst[0] == UPLD_IMAGE_HEADER_ID) {
-    // Universal payload
-    DEBUG ((DEBUG_INFO, "Universal Payload\n"));
-
-    // For SBL, it has been authenticated by container already.
-    // For test purpose, here do authentication again using universal payload method.
-    Status = AuthenticateUniversalPayload ((UINT32)(UINTN)Dst);
-    if (EFI_ERROR(Status)) {
-      CpuHalt ("UPayload authentication failed !");
-    }
-    Status = LoadUniversalPayload ((UINT32)(UINTN)Dst, (UNIVERSAL_PAYLOAD_ENTRY *)&PldEntry, &TmpBase, &PldMachine);
-    if (!EFI_ERROR(Status)) {
-      PldBase = TmpBase;
-    } else {
-      DEBUG ((DEBUG_ERROR, "UPayload load failed !\n"));
-    }
-  } else if (Dst[0] == 0x00005A4D) {
+  if (Dst[0] == 0x00005A4D) {
     // It is a PE format
     DEBUG ((DEBUG_INFO, "PE32 Format Payload\n"));
     Status = PeCoffRelocateImage ((UINT32)(UINTN)Dst);
@@ -200,7 +186,23 @@ NormalBootPath (
     UefiSig = Dst[0];
     Status  = LoadFvImage (Dst, Stage2Param->PayloadActualLength, (VOID **)&PldEntry, &PldMachine);
   } else if (IsElfImage (Dst)) {
-    Status = LoadElfImage (Dst, (VOID *)&PldEntry);
+    DEBUG ((DEBUG_INFO, "ELF Format Payload\n"));
+    // Assume Universal Payload first
+    Status = LoadUniversalPayload (Dst, &PayloadInfo);
+    if (Status == EFI_SUCCESS) {
+      PldEntry   = (PAYLOAD_ENTRY)PayloadInfo.EntryPoint;
+      HobSize    = sizeof (LOADED_PAYLOAD_IMAGE_INFO) + sizeof(PAYLOAD_IMAGE_ENTRY) * PayloadInfo.ImageCount;
+      PldImgInfo = (LOADED_PAYLOAD_IMAGE_INFO *)BuildGuidHob (&gLoadedPayloadImageInfoGuid, HobSize);
+      if (PldImgInfo != NULL) {
+        ZeroMem (PldImgInfo, HobSize);
+        PldImgInfo->Revision = 1;
+        PldImgInfo->EntryNum = PayloadInfo.ImageCount;
+        CopyMem (PldImgInfo->Entry, &PayloadInfo.LoadedImage, PayloadInfo.ImageCount * sizeof(PAYLOAD_IMAGE_ENTRY));
+      }
+    } else if (Status == EFI_NOT_FOUND) {
+      // Fall back to normal ELF image
+      Status = LoadElfImage (Dst, (VOID *)&PldEntry);
+    }
   } else {
     if (FeaturePcdGet (PcdLinuxPayloadEnabled)) {
       if (IsBzImage (Dst)) {

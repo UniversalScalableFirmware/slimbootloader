@@ -185,7 +185,7 @@ BoardInit (
   IN  BOARD_INIT_PHASE  InitPhase
 )
 {
-  EFI_STATUS             Status;
+//  EFI_STATUS             Status;
   PLT_DEVICE_TABLE      *PltDeviceTable;
   VOID                  *FspHob;
 
@@ -197,12 +197,14 @@ BoardInit (
     SetDeviceTable (PltDeviceTable);
     BoardDetection ();
     UpdateBootMode ();
+    /*
     if (!FeaturePcdGet (PcdStage1BXip)) {
       SpiConstructor ();
       VariableConstructor (PcdGet32 (PcdVariableRegionBase), PcdGet32 (PcdVariableRegionSize));
       Status = TestVariableService ();
       ASSERT_EFI_ERROR (Status);
     }
+    */
     break;
   case PostConfigInit:
     PlatformNameInit ();
