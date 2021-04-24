@@ -9,10 +9,25 @@
 #define _UNIVERSAL_PAYLOAD_LIB_H_
 
 #include <Guid/LoadedPayloadImageInfoGuid.h>
-#include <Standard/UniversalPayload.h>
+
+typedef  EFI_STATUS  (EFIAPI *UNIVERSAL_PAYLOAD_ENTRYPOINT) (VOID *HobList);
+
+#define  UPLD_INFO_SEC_NAME           ".upld_info"
+#define  UPLD_IMAGE_SEC_NAME_PREFIX   ".upld."
+#define  UPLD_IDENTIFIER              SIGNATURE_32('U', 'P', 'L', 'D')
+
+typedef struct {
+  UINT32                          Identifier;
+  UINT16                          HeaderLength;
+  UINT8                           HeaderRevision;
+  UINT8                           Reserved;
+  UINT64                          Revision;
+  UINT64                          Capability;
+  CHAR8                           ImageId[16];
+  CHAR8                           ProducerId[16];
+} UPLD_INFO_HEADER;
 
 #define  MAX_PLD_IMAGE_ENTRY      4
-
 typedef struct {
   UPLD_INFO_HEADER                Info;
   UINT32                          Machine;
@@ -21,11 +36,6 @@ typedef struct {
   PAYLOAD_IMAGE_ENTRY             LoadedImage[MAX_PLD_IMAGE_ENTRY];
 } LOADED_PAYLOAD_INFO;
 
-BOOLEAN
-EFIAPI
-IsUniversalPayload (
-  IN  VOID      *ImageBase
-);
 
 /**
   Load universal payload image into memory.

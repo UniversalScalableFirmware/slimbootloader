@@ -6,11 +6,7 @@
 
 **/
 
-#include <Library/BaseLib.h>
-#include <Library/DebugLib.h>
-#include <Library/BaseMemoryLib.h>
-#include <Library/ElfLib.h>
-
+#include "ElfLibInternal.h"
 
 STATIC
 BOOLEAN
@@ -50,7 +46,6 @@ GetElf32SectionByIndex (
 }
 
 
-
 Elf32_Shdr *
 EFIAPI
 GetElf32SectionByName (
@@ -58,6 +53,7 @@ GetElf32SectionByName (
   IN  CHAR8                *Name
 )
 {
+  EFI_STATUS    Status;
   Elf32_Ehdr   *Elf32Hdr;
   Elf32_Shdr   *Elf32Shdr;
   CHAR8        *SecName;
@@ -66,15 +62,14 @@ GetElf32SectionByName (
   Elf32Shdr = NULL;
   Elf32Hdr  = (Elf32_Ehdr *)ElfCt->ImageBase;
   for (Idx = 0; Idx < Elf32Hdr->e_shnum; Idx++) {
-    SecName = GetElfSectionName (ElfCt, Idx);
-    if ((SecName != NULL) && (AsciiStrCmp(Name, SecName) == 0)) {
+    Status = GetElfSectionName (ElfCt, Idx, &SecName);
+    if (!EFI_ERROR(Status) && (AsciiStrCmp(Name, SecName) == 0)) {
       Elf32Shdr = GetElf32SectionByIndex (ElfCt, Idx);
       break;
     }
   }
   return Elf32Shdr;
 }
-
 
 /**
   Load ELF image which has 32-bit architecture
@@ -139,6 +134,7 @@ RelocateElf32Sections  (
   IN    ELF_IMAGE_CONTEXT      *ElfCt
   )
 {
+  EFI_STATUS       Status;
   Elf32_Ehdr      *Elf32Hdr;
   Elf32_Shdr      *Rel32Shdr;
   Elf32_Shdr      *Sec32Shdr;
@@ -189,9 +185,10 @@ RelocateElf32Sections  (
         }
       }
 
-      Name = GetElfSectionName (ElfCt, Rel32Shdr->sh_info);
-      if ((Name != NULL) && AsciiStrCmp (Name, ".text") == 0) {
+      Status = GetElfSectionName (ElfCt, Rel32Shdr->sh_info, &Name);
+      if (!EFI_ERROR(Status) && AsciiStrCmp (Name, ".text") == 0) {
         Elf32Hdr->e_entry = Elf32Hdr->e_entry - Sec32Shdr->sh_addr + (UINT32)(UINTN)ElfCt->ImageBase + Sec32Shdr->sh_offset;
+        ElfCt->Entry      = (UINTN)Elf32Hdr->e_entry;
       }
     }
   }

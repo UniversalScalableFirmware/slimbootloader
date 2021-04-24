@@ -1,7 +1,7 @@
 /** @file
   ELF library
 
-  Copyright (c) 2018, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2018 - 2021, Intel Corporation. All rights reserved.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -9,17 +9,25 @@
 #ifndef __ELF_LIB_H__
 #define __ELF_LIB_H__
 
-#include <Uefi/UefiBaseType.h>
-#include <Standard/ElfCommon.h>
-#include <Standard/Elf32.h>
-#include <Standard/Elf64.h>
+#include <PiPei.h>
+
+#define  ELF_CLASS32   1
+#define  ELF_CLASS64   2
 
 typedef struct {
   UINT8      *ImageBase;
-  UINT32      ShStrOff;
-  UINT32      ShStrLen;
-  UINT8       EiClass;
+  UINT32      EiClass;
+  UINT32      ShNum;
+  UINTN       ShStrOff;
+  UINTN       ShStrLen;
+  UINTN       Entry;
 } ELF_IMAGE_CONTEXT;
+
+typedef struct {
+  UINTN       Offset;
+  UINTN       Length;
+} SECTION_POS;
+
 
 /**
   Check if the image is a bootable ELF image.
@@ -32,8 +40,9 @@ typedef struct {
 BOOLEAN
 EFIAPI
 IsElfImage (
-  IN  CONST VOID             *ImageBase
+  IN  CONST VOID            *ImageBase
   );
+
 
 /**
   Load the ELF image to specified address in ELF header.
@@ -50,6 +59,7 @@ IsElfImage (
   @retval EFI_SUCCESS             ELF binary is loaded successfully.
 **/
 EFI_STATUS
+EFIAPI
 LoadElfImage (
   IN        VOID                  *ImageBase,
   OUT       VOID                 **EntryPoint
@@ -57,9 +67,29 @@ LoadElfImage (
 
 
 /**
-  Relocated the ELF image at current loaded address.
+  Parse the ELF image info.
 
-  This function relocates ELF image sections at current loaded address.
+  @param[in]  ImageBase      Memory address of an image.
+  @param[out] ElfCt          The EFL image context pointer.
+
+  @retval EFI_INVALID_PARAMETER   Input parameters are not valid.
+  @retval EFI_UNSUPPORTED         Unsupported binary type.
+  @retval EFI_LOAD_ERROR          ELF binary loading error.
+  @retval EFI_SUCCESS             ELF binary is loaded successfully.
+**/
+EFI_STATUS
+EFIAPI
+ParseElfImage (
+  IN  VOID                 *ImageBase,
+  OUT ELF_IMAGE_CONTEXT    *ElfCt
+  );
+
+
+/**
+  Load the ELF image to specified address in ELF header.
+
+  This function loads ELF image segments into memory address specified
+  in ELF program header.
 
   @param[in]  ImageBase           Memory address of an image.
   @param[out] EntryPoint          The entry point of loaded ELF image.
@@ -70,57 +100,67 @@ LoadElfImage (
   @retval EFI_SUCCESS             ELF binary is loaded successfully.
 **/
 EFI_STATUS
-RelocateElfImage (
-  IN  CONST VOID                  *ElfBuffer,
+EFIAPI
+LoadElfImage (
+  IN        VOID                  *ElfBuffer,
   OUT       VOID                 **EntryPoint
   );
 
-EFI_STATUS
-EFIAPI
-ParseElfImage (
-  IN  VOID                 *ImageBase,
-  IN  ELF_IMAGE_CONTEXT    *ElfCt
-);
 
-CHAR8 *
+/**
+  Get a ELF section name from its index.
+
+  @param[in]  ElfCt               ELF image context pointer.
+  @param[in]  SecIdx              ELF section index.
+  @param[out] SecName             The pointer to the section name.
+
+  @retval EFI_INVALID_PARAMETER   ElfCt or SecName is NULL.
+  @retval EFI_NOT_FOUND           Could not find the section.
+  @retval EFI_SUCCESS             Section name was filled successfully.
+**/
+EFI_STATUS
 EFIAPI
 GetElfSectionName (
   IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SecIdx
+  IN  UINT32                SecIdx,
+  OUT CHAR8               **SecName
   );
 
+
+/**
+  Get a ELF section name from its index.
+
+  @param[in]  ElfCt               ELF image context pointer.
+  @param[in]  SecIdx              ELF section index.
+  @param[out] SecPos              The pointer to the section postion.
+
+  @retval EFI_INVALID_PARAMETER   ElfCt or SecPos is NULL.
+  @retval EFI_NOT_FOUND           Could not find the section.
+  @retval EFI_SUCCESS             Section posistion was filled successfully.
+**/
+EFI_STATUS
+EFIAPI
+GetElfSectionPos (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  IN  UINT32                SecIdx,
+  OUT SECTION_POS          *SecPos
+  );
+
+
+/**
+  Relocate all sections in a ELF image to current location.
+
+  @param[in]  ElfCt               ELF image context pointer.
+
+  @retval EFI_INVALID_PARAMETER   ElfCt is NULL.
+  @retval EFI_UNSUPPORTED         Relocation is not supported.
+  @retval EFI_SUCCESS             ELF image was relocated successfully.
+**/
 EFI_STATUS
 EFIAPI
 RelocateElfSections  (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt
-);
+  IN    ELF_IMAGE_CONTEXT      *ElfCt
+  );
 
-Elf32_Shdr *
-EFIAPI
-GetElf32SectionByIndex (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SecIdx
-);
-
-Elf64_Shdr *
-EFIAPI
-GetElf64SectionByIndex (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SecIdx
-);
-
-Elf32_Shdr *
-EFIAPI
-GetElf32SectionByName (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  CHAR8                *Name
-);
-
-Elf64_Shdr *
-EFIAPI
-GetElf64SectionByName (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  CHAR8                *Name
-);
 
 #endif /* __ELF_LIB_H__ */

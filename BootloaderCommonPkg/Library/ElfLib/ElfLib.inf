@@ -20,10 +20,14 @@
 #
 
 [Sources]
+  ElfCommon.h
+  Elf32.h
+  Elf64.h
+  ElfLibInternal.h
   ElfLib.c
   Elf32Lib.c
   Elf64Lib.c
-  ElfLibInternal.h
+
 
 [Packages]
   MdePkg/MdePkg.dec

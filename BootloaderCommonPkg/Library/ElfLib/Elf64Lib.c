@@ -6,10 +6,7 @@
 
 **/
 
-#include <Library/BaseLib.h>
-#include <Library/DebugLib.h>
-#include <Library/BaseMemoryLib.h>
-#include <Library/ElfLib.h>
+#include "ElfLibInternal.h"
 
 STATIC
 BOOLEAN
@@ -56,6 +53,7 @@ GetElf64SectionByName (
   IN  CHAR8                *Name
 )
 {
+  EFI_STATUS    Status;
   Elf64_Ehdr   *Elf64Hdr;
   Elf64_Shdr   *Elf64Shdr;
   CHAR8        *SecName;
@@ -64,8 +62,8 @@ GetElf64SectionByName (
   Elf64Shdr = NULL;
   Elf64Hdr  = (Elf64_Ehdr *)ElfCt->ImageBase;
   for (Idx = 0; Idx < Elf64Hdr->e_shnum; Idx++) {
-    SecName = GetElfSectionName (ElfCt, Idx);
-    if ((SecName != NULL) && (AsciiStrCmp(Name, SecName) == 0)) {
+    Status = GetElfSectionName (ElfCt, Idx, &SecName);
+    if (!EFI_ERROR(Status) && (AsciiStrCmp(Name, SecName) == 0)) {
       Elf64Shdr = GetElf64SectionByIndex (ElfCt, Idx);
       break;
     }
@@ -101,6 +99,7 @@ RelocateElf64Sections  (
   IN    ELF_IMAGE_CONTEXT      *ElfCt
   )
 {
+  EFI_STATUS       Status;
   Elf64_Ehdr      *Elf64Hdr;
   Elf64_Shdr      *Rel64Shdr;
   Elf64_Shdr      *Sec64Shdr;
@@ -155,9 +154,10 @@ RelocateElf64Sections  (
         }
       }
 
-      Name = GetElfSectionName (ElfCt, Rel64Shdr->sh_info);
-      if ((Name != NULL) && AsciiStrCmp (Name, ".text") == 0) {
+      Status = GetElfSectionName (ElfCt, Rel64Shdr->sh_info, &Name);
+      if (!EFI_ERROR(Status) && AsciiStrCmp (Name, ".text") == 0) {
         Elf64Hdr->e_entry = Elf64Hdr->e_entry - Sec64Shdr->sh_addr + (UINTN)ElfCt->ImageBase + Sec64Shdr->sh_offset;
+        ElfCt->Entry      = (UINTN)Elf64Hdr->e_entry;
       }
     }
   }

@@ -13,6 +13,38 @@
 #include <Library/DebugLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/ElfLib.h>
+#include <ElfCommon.h>
+#include <Elf32.h>
+#include <Elf64.h>
+
+
+Elf32_Shdr *
+EFIAPI
+GetElf32SectionByIndex (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  IN  UINT32                SecIdx
+);
+
+Elf64_Shdr *
+EFIAPI
+GetElf64SectionByIndex (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  IN  UINT32                SecIdx
+);
+
+Elf32_Shdr *
+EFIAPI
+GetElf32SectionByName (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  IN  CHAR8                *Name
+);
+
+Elf64_Shdr *
+EFIAPI
+GetElf64SectionByName (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  IN  CHAR8                *Name
+);
 
 /**
   Load ELF image which has 32-bit architecture
