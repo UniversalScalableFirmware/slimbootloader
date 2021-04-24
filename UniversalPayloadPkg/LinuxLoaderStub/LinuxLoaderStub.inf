@@ -35,6 +35,7 @@
 [Packages]
   MdePkg/MdePkg.dec
   BootloaderCommonPkg/BootloaderCommonPkg.dec
+  UniversalPayloadPkg/UniversalPayloadPkg.dec
 
 [LibraryClasses]
   BaseLib
@@ -46,9 +47,10 @@
   gEfiGraphicsInfoHobGuid
   gLoaderMemoryMapInfoGuid
   gEfiAcpi20TableGuid
+  gLoadedPayloadImageInfoGuid
 
 [Pcd]
-
+  gUniversalPayloadTokenSpaceGuid.PcdHobListPtr
 
 [Depex]
   TRUE

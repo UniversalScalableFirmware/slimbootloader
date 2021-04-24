@@ -15,9 +15,11 @@
 #include <Library/HobLib.h>
 #include <Library/LinuxLib.h>
 #include <Library/PrintLib.h>
+#include <Library/PlatformHookLib.h>
 #include <Guid/GraphicsInfoHob.h>
 #include <Guid/MemoryMapInfoGuid.h>
 #include <Guid/AcpiTableGuid.h>
+#include <Guid/LoadedPayloadImageInfoGuid.h>
 
 #define MAX_CMD_LINE_LEN  0x200
 

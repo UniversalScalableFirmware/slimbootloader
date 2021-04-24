@@ -242,6 +242,16 @@ IsTextShdr (
   return (BOOLEAN) ((Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == SHF_ALLOC);
 }
 
+STATIC
+BOOLEAN
+IsHiiRsrcShdr (
+  Elf_Shdr *Shdr
+  )
+{
+  Elf_Shdr *Namedr = GetShdrByIndex(mEhdr->e_shstrndx);
+
+  return (BOOLEAN) (strcmp((CHAR8*)mEhdr + Namedr->sh_offset + Shdr->sh_name, ELF_HII_SECTION_NAME) == 0);
+}
 
 STATIC
 BOOLEAN
@@ -249,6 +259,9 @@ IsDataShdr (
   Elf_Shdr *Shdr
   )
 {
+  if (IsHiiRsrcShdr(Shdr)) {
+    return FALSE;
+  }
   return (BOOLEAN) (Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == (SHF_ALLOC | SHF_WRITE);
 }
 

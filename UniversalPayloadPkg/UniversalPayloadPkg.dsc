@@ -40,10 +40,28 @@
   IoLib          | MdePkg/Library/BaseIoLibIntrinsic/BaseIoLibIntrinsic.inf
   PrintLib       | MdePkg/Library/BasePrintLib/BasePrintLib.inf
   PcdLib         | MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
-  DebugLib       | MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
+  DebugLib       | MdePkg/Library/BaseDebugLibSerialPort/BaseDebugLibSerialPort.inf
   ModuleEntryLib | BootloaderCommonPkg/Library/ModuleEntryLib/ModuleEntryLib.inf
   HobLib         | BootloaderCommonPkg/Library/HobLib/HobLib.inf
   BootloaderLib  | UniversalPayloadPkg/Library/BootloaderLib/BootloaderLib.inf
+  SerialPortLib  | BootloaderCommonPkg/Library/SerialPortLib/SerialPortLib.inf
+  PlatformHookLib | UniversalPayloadPkg/Library/PlatformHookLib/PlatformHookLib.inf
+  DebugPrintErrorLevelLib | MdePkg/Library/BaseDebugPrintErrorLevelLib/BaseDebugPrintErrorLevelLib.inf
+
+[PcdsFixedAtBuild]
+!if $(TARGET) == RELEASE
+  # Use this PCD to control the debug message that goes into binary image
+  gEfiMdePkgTokenSpaceGuid.PcdFixedDebugPrintErrorLevel    | 0x80080003
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask            | 0x23
+!else
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask            | 0x27
+!endif
+
+[PcdsPatchableInModule]
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel          | 0x8000004F
+  gUniversalPayloadTokenSpaceGuid.PcdSerialRegisterBase     | 0
+  gUniversalPayloadTokenSpaceGuid.PcdSerialRegisterStride   | 1
+  gUniversalPayloadTokenSpaceGuid.PcdHobListPtr             | 0
 
 [Components]
   UniversalPayloadPkg/LinuxLoaderStub/LinuxLoaderStub.inf
