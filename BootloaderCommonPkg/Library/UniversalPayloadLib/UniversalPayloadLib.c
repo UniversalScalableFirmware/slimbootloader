@@ -41,6 +41,9 @@ LoadUniversalPayload (
   UINT16                         ImgIdx;
   CHAR8                         *SecName;
   SECTION_POS                    SecPos;
+  SEGMENT_INFO                   SegInfo;
+  UINT32                         ImageSize;
+  BOOLEAN                        Xip;
 
   if ((ImageBase == NULL) || (PayloadInfo == NULL)) {
     return EFI_INVALID_PARAMETER;
@@ -79,15 +82,44 @@ LoadUniversalPayload (
     return EFI_UNSUPPORTED;
   }
 
-  Status = RelocateElfSections (&ElfCt);
+  Status = GetElfSectionPos (&ElfCt, ElfCt.ShNum - 1, &SecPos);
   if (EFI_ERROR(Status)) {
     return EFI_ABORTED;
   }
+  ImageSize = SecPos.Offset + SecPos.Length;
+
+  // Determine if it can be executed in place
+  Xip = TRUE;
+  for (Idx = 0; Idx < ElfCt.PhNum; Idx++) {
+    Status = GetElfSegmentInfo (&ElfCt, Idx, &SegInfo);
+    if (!EFI_ERROR(Status)) {
+      if (SegInfo.MemLen != SegInfo.Length) {
+        Xip = FALSE;
+        break;
+      }
+    }
+  }
+
+  if (Xip) {
+    DEBUG ((DEBUG_INFO, "Relocate ELF\n"));
+    Status = RelocateElfSections (&ElfCt);
+    if (EFI_ERROR(Status)) {
+      return EFI_ABORTED;
+    }
+  } else {
+    DEBUG ((DEBUG_INFO, "Load ELF\n"));
+    Status = LoadElfSegments (&ElfCt);
+    if (EFI_ERROR(Status)) {
+      return EFI_ABORTED;
+    }
+  }
 
   CopyMem (&PayloadInfo->Info, UpldInfo, sizeof(UPLD_INFO_HEADER));
-  PayloadInfo->Machine    = (ElfCt.EiClass == ELF_CLASS32) ? IMAGE_FILE_MACHINE_I386 : IMAGE_FILE_MACHINE_X64;
-  PayloadInfo->ImageCount = ImgIdx;
-  PayloadInfo->EntryPoint = (UNIVERSAL_PAYLOAD_ENTRYPOINT)ElfCt.Entry;
+  PayloadInfo->Machine     = (ElfCt.EiClass == ELF_CLASS32) ? IMAGE_FILE_MACHINE_I386 : IMAGE_FILE_MACHINE_X64;
+  PayloadInfo->ImageCount  = ImgIdx;
+  PayloadInfo->EntryPoint  = (UNIVERSAL_PAYLOAD_ENTRYPOINT)ElfCt.Entry;
+  PayloadInfo->PayloadSize = ImageSize;
+  PayloadInfo->PayloadBase = (UINT32)(UINTN)ImageBase;
 
   return EFI_SUCCESS;
 }

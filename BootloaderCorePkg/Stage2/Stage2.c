@@ -193,13 +193,15 @@ NormalBootPath (
       DEBUG ((DEBUG_INFO, "Univeral Payload\n"));
       PldMachine = (UINT16)PayloadInfo.Machine;
       PldEntry   = (PAYLOAD_ENTRY)PayloadInfo.EntryPoint;
-      HobSize    = sizeof (LOADED_PAYLOAD_IMAGE_INFO) + sizeof(PAYLOAD_IMAGE_ENTRY) * PayloadInfo.ImageCount;
+      HobSize    = sizeof (LOADED_PAYLOAD_IMAGE_INFO) + sizeof(PAYLOAD_IMAGE_ENTRY) * (PayloadInfo.ImageCount + 1);
       PldImgInfo = (LOADED_PAYLOAD_IMAGE_INFO *)BuildGuidHob (&gLoadedPayloadImageInfoGuid, HobSize);
       if (PldImgInfo != NULL) {
         ZeroMem (PldImgInfo, HobSize);
         PldImgInfo->Revision = 1;
-        PldImgInfo->EntryNum = PayloadInfo.ImageCount;
-        CopyMem (PldImgInfo->Entry, &PayloadInfo.LoadedImage, PayloadInfo.ImageCount * sizeof(PAYLOAD_IMAGE_ENTRY));
+        PldImgInfo->EntryNum = PayloadInfo.ImageCount + 1;
+        PldImgInfo->Entry[0].Base = PayloadInfo.PayloadBase;
+        PldImgInfo->Entry[0].Size = PayloadInfo.PayloadSize;
+        CopyMem (&PldImgInfo->Entry[1], &PayloadInfo.LoadedImage, PayloadInfo.ImageCount * sizeof(PAYLOAD_IMAGE_ENTRY));
       }
     } else if (Status == EFI_NOT_FOUND) {
       // Fall back to normal ELF image

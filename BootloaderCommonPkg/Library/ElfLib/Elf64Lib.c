@@ -44,8 +44,6 @@ GetElf64SectionByIndex (
   return (Elf64_Shdr *)(ElfCt->ImageBase + Elf64Hdr->e_shoff + SecIdx * Elf64Hdr->e_shentsize);
 }
 
-
-
 Elf64_Shdr *
 EFIAPI
 GetElf64SectionByName (
@@ -71,11 +69,28 @@ GetElf64SectionByName (
   return Elf64Shdr;
 }
 
+Elf64_Phdr *
+EFIAPI
+GetElf64SegmentByIndex (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  IN  UINT32                SegIdx
+)
+{
+  Elf64_Ehdr        *Elf64Hdr;
+
+  Elf64Hdr  = (Elf64_Ehdr *)ElfCt->ImageBase;
+  if (SegIdx >= Elf64Hdr->e_phnum) {
+    return NULL;
+  }
+
+  return (Elf64_Phdr *)(ElfCt->ImageBase + Elf64Hdr->e_phoff + SegIdx * Elf64Hdr->e_shentsize);
+}
+
+
 /**
   Load ELF image which has 32-bit architecture
 
-  @param[in]  ImageBase       Memory address of an image.
-  @param[out] EntryPoint      The entry point of loaded ELF image.
+  @param[in]  ElfCt               ELF image context pointer.
 
   @retval EFI_SUCCESS         ELF binary is loaded successfully.
   @retval Others              Loading ELF binary fails.
@@ -84,10 +99,47 @@ GetElf64SectionByName (
 EFI_STATUS
 EFIAPI
 LoadElf64Segments (
-  IN    ELF_IMAGE_CONTEXT    *ElfCt,
-  OUT       VOID            **EntryPoint
+  IN    ELF_IMAGE_CONTEXT    *ElfCt
   )
 {
+  Elf64_Ehdr   *Elf64Hdr;
+  Elf64_Phdr   *ProgramHdr;
+  Elf64_Phdr   *ProgramHdrBase;
+  UINT16        Index;
+  UINT8        *ImageBase;
+
+  if (ElfCt == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  ImageBase = ElfCt->ImageBase;
+
+  Elf64Hdr       = (Elf64_Ehdr *)ImageBase;
+  ProgramHdrBase = (Elf64_Phdr *)(ImageBase + Elf64Hdr->e_phoff);
+  for (Index = 0; Index < Elf64Hdr->e_phnum; Index++) {
+    ProgramHdr = (Elf64_Phdr *)((UINT8 *)ProgramHdrBase + Index * Elf64Hdr->e_phentsize);
+
+    if ((ProgramHdr->p_type != PT_LOAD) ||
+        (ProgramHdr->p_memsz == 0) ||
+        (ProgramHdr->p_offset == 0)) {
+      continue;
+    }
+
+    if (ProgramHdr->p_filesz > ProgramHdr->p_memsz) {
+      return EFI_LOAD_ERROR;
+    }
+
+    CopyMem ((VOID *)(UINTN)ProgramHdr->p_paddr,
+        ImageBase + ProgramHdr->p_offset,
+        (UINTN)ProgramHdr->p_filesz);
+
+    if (ProgramHdr->p_memsz > ProgramHdr->p_filesz) {
+      ZeroMem ((VOID *)(UINTN)(ProgramHdr->p_paddr + ProgramHdr->p_filesz),
+        (UINTN)(ProgramHdr->p_memsz - ProgramHdr->p_filesz));
+    }
+  }
+
+  ElfCt->Entry = (UINTN)Elf64Hdr->e_entry;
   return EFI_SUCCESS;
 }
 

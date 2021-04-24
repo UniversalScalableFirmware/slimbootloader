@@ -18,6 +18,7 @@ typedef struct {
   UINT8      *ImageBase;
   UINT32      EiClass;
   UINT32      ShNum;
+  UINT32      PhNum;
   UINTN       ShStrOff;
   UINTN       ShStrLen;
   UINTN       Entry;
@@ -28,6 +29,12 @@ typedef struct {
   UINTN       Length;
 } SECTION_POS;
 
+typedef struct {
+  UINTN       Offset;
+  UINTN       Length;
+  UINTN       MemLen;
+  UINTN       MemAddr;
+} SEGMENT_INFO;
 
 /**
   Check if the image is a bootable ELF image.
@@ -84,29 +91,6 @@ ParseElfImage (
   OUT ELF_IMAGE_CONTEXT    *ElfCt
   );
 
-
-/**
-  Load the ELF image to specified address in ELF header.
-
-  This function loads ELF image segments into memory address specified
-  in ELF program header.
-
-  @param[in]  ImageBase           Memory address of an image.
-  @param[out] EntryPoint          The entry point of loaded ELF image.
-
-  @retval EFI_INVALID_PARAMETER   Input parameters are not valid.
-  @retval EFI_UNSUPPORTED         Unsupported binary type.
-  @retval EFI_LOAD_ERROR          ELF binary loading error.
-  @retval EFI_SUCCESS             ELF binary is loaded successfully.
-**/
-EFI_STATUS
-EFIAPI
-LoadElfImage (
-  IN        VOID                  *ElfBuffer,
-  OUT       VOID                 **EntryPoint
-  );
-
-
 /**
   Get a ELF section name from its index.
 
@@ -146,6 +130,24 @@ GetElfSectionPos (
   OUT SECTION_POS          *SecPos
   );
 
+/**
+  Get a ELF program segment loading info.
+
+  @param[in]  ElfCt               ELF image context pointer.
+  @param[in]  SegIdx              ELF segment index.
+  @param[out] SegInfo             The pointer to the segment info.
+
+  @retval EFI_INVALID_PARAMETER   ElfCt or SecPos is NULL.
+  @retval EFI_NOT_FOUND           Could not find the section.
+  @retval EFI_SUCCESS             Section posistion was filled successfully.
+**/
+EFI_STATUS
+EFIAPI
+GetElfSegmentInfo (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  IN  UINT32                SegIdx,
+  OUT SEGMENT_INFO         *SegInfo
+  );
 
 /**
   Relocate all sections in a ELF image to current location.
@@ -162,5 +164,23 @@ RelocateElfSections  (
   IN    ELF_IMAGE_CONTEXT      *ElfCt
   );
 
+/**
+  Load the ELF segments to specified address in ELF header.
+
+  This function loads ELF image segments into memory address specified
+  in ELF program header.
+
+  @param[in]  ElfCt               ELF image context pointer.
+
+  @retval EFI_INVALID_PARAMETER   Input parameters are not valid.
+  @retval EFI_UNSUPPORTED         Unsupported binary type.
+  @retval EFI_LOAD_ERROR          ELF binary loading error.
+  @retval EFI_SUCCESS             ELF binary is loaded successfully.
+**/
+EFI_STATUS
+EFIAPI
+LoadElfSegments (
+  IN  ELF_IMAGE_CONTEXT       *ElfCt
+  );
 
 #endif /* __ELF_LIB_H__ */

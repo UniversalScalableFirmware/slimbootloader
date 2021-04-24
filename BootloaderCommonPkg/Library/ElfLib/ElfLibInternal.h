@@ -46,11 +46,24 @@ GetElf64SectionByName (
   IN  CHAR8                *Name
 );
 
+Elf32_Phdr *
+EFIAPI
+GetElf32SegmentByIndex (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  IN  UINT32                SegIdx
+);
+
+Elf64_Phdr *
+EFIAPI
+GetElf64SegmentByIndex (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  IN  UINT32                SegIdx
+);
+
 /**
   Load ELF image which has 32-bit architecture
 
-  @param[in]  ImageBase       Memory address of an image.
-  @param[out] EntryPoint      The entry point of loaded ELF image.
+  @param[in]  ElfCt               ELF image context pointer.
 
   @retval EFI_SUCCESS         ELF binary is loaded successfully.
   @retval Others              Loading ELF binary fails.
@@ -58,13 +71,11 @@ GetElf64SectionByName (
 **/
 EFI_STATUS
 LoadElf32Segments (
-  IN    ELF_IMAGE_CONTEXT    *ElfCt,
-  OUT       VOID            **EntryPoint
+  IN    ELF_IMAGE_CONTEXT    *ElfCt
   );
 
-
 /**
-  Load ELF image which has 32-bit architecture
+  Load ELF image which has 64-bit architecture
 
   @param[in]  ImageBase       Memory address of an image.
   @param[out] EntryPoint      The entry point of loaded ELF image.
@@ -75,8 +86,7 @@ LoadElf32Segments (
 **/
 EFI_STATUS
 LoadElf64Segments (
-  IN    ELF_IMAGE_CONTEXT    *ElfCt,
-  OUT       VOID            **EntryPoint
+  IN    ELF_IMAGE_CONTEXT    *ElfCt
   );
 
 

@@ -71,11 +71,27 @@ GetElf32SectionByName (
   return Elf32Shdr;
 }
 
+Elf32_Phdr *
+EFIAPI
+GetElf32SegmentByIndex (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  IN  UINT32                SegIdx
+)
+{
+  Elf32_Ehdr        *Elf32Hdr;
+
+  Elf32Hdr  = (Elf32_Ehdr *)ElfCt->ImageBase;
+  if (SegIdx >= Elf32Hdr->e_phnum) {
+    return NULL;
+  }
+
+  return (Elf32_Phdr *)(ElfCt->ImageBase + Elf32Hdr->e_phoff + SegIdx * Elf32Hdr->e_shentsize);
+}
+
 /**
   Load ELF image which has 32-bit architecture
 
-  @param[in]  ImageBase       Memory address of an image.
-  @param[out] EntryPoint      The entry point of loaded ELF image.
+  @param[in]  ElfCt               ELF image context pointer.
 
   @retval EFI_SUCCESS         ELF binary is loaded successfully.
   @retval Others              Loading ELF binary fails.
@@ -83,8 +99,7 @@ GetElf32SectionByName (
 **/
 EFI_STATUS
 LoadElf32Segments (
-  IN    ELF_IMAGE_CONTEXT    *ElfCt,
-  OUT       VOID            **EntryPoint
+  IN    ELF_IMAGE_CONTEXT    *ElfCt
   )
 {
   Elf32_Ehdr   *Elf32Hdr;
@@ -93,12 +108,12 @@ LoadElf32Segments (
   UINT16        Index;
   UINT8        *ImageBase;
 
-  ImageBase = ElfCt->ImageBase;
-  if ((ImageBase == NULL) || (EntryPoint == NULL)) {
+  if (ElfCt == NULL) {
     return EFI_INVALID_PARAMETER;
   }
 
-  Elf32Hdr         = (Elf32_Ehdr *)ImageBase;
+  ImageBase = ElfCt->ImageBase;
+  Elf32Hdr       = (Elf32_Ehdr *)ImageBase;
   ProgramHdrBase = (Elf32_Phdr *)(ImageBase + Elf32Hdr->e_phoff);
   for (Index = 0; Index < Elf32Hdr->e_phnum; Index++) {
     ProgramHdr = (Elf32_Phdr *)((UINT8 *)ProgramHdrBase + Index * Elf32Hdr->e_phentsize);
@@ -123,7 +138,7 @@ LoadElf32Segments (
     }
   }
 
-  *EntryPoint = (VOID *)(UINTN)Elf32Hdr->e_entry;
+  ElfCt->Entry = Elf32Hdr->e_entry;
   return EFI_SUCCESS;
 }
 
