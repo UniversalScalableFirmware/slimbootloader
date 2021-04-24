@@ -203,7 +203,6 @@ UpldLoadBzImage (
   )
 {
   BOOT_PARAMS                *Bp;
-  VOID                       *KernelBuf;
   UINT32                      BootParamSize;
   UINTN                       KernelSize;
   VOID CONST                 *ImageBase;
@@ -224,7 +223,6 @@ UpldLoadBzImage (
     BootParamSize = 5 * 512;
   }
 
-  KernelBuf  = (VOID *) (UINTN)LINUX_KERNEL_BASE;
   KernelSize = Bp->Hdr.SysSize * 16;
   CopyMem ((VOID *)(UINTN)Bp->Hdr.PrefAddress, (UINT8 *)ImageBase + BootParamSize, KernelSize);
 

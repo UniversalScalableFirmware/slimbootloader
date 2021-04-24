@@ -28,7 +28,7 @@ SecStartup (
   LOADED_PAYLOAD_IMAGE_INFO  *PldImgInfo;
   UINT32                      Idx;
 
-  PcdSet64S (PcdHobListPtr, (UINT64)(UINTN)Params);
+  (VOID)PcdSet64S (PcdHobListPtr, (UINT64)(UINTN)Params);
   PlatformHookSerialPortInitialize ();
 
   DEBUG ((DEBUG_INFO, "Linux Loader ... \n"));
@@ -44,32 +44,33 @@ SecStartup (
   if (GuidHob != NULL) {
     PldImgInfo  = (LOADED_PAYLOAD_IMAGE_INFO *) GET_GUID_HOB_DATA (GuidHob);
     for (Idx = 0; Idx < PldImgInfo->EntryNum; Idx++) {
-      if (AsciiStrCmp (PldImgInfo->Entry[Idx].Name, "upld.kernel") == 0) {
+      DEBUG ((DEBUG_INFO, "Found loaded image '%a'\n", PldImgInfo->Entry[Idx].Name));
+      if (AsciiStrCmp (PldImgInfo->Entry[Idx].Name, ".upld.kernel") == 0) {
         KernelBuf = (VOID *)(UINTN)PldImgInfo->Entry[Idx].Base;
         KernelLen = (UINTN)(UINTN)PldImgInfo->Entry[Idx].Size;
-      } else if (AsciiStrCmp (PldImgInfo->Entry[Idx].Name, "upld.initrd") == 0) {
+      } else if (AsciiStrCmp (PldImgInfo->Entry[Idx].Name, ".upld.initrd") == 0) {
         InitRdBuf = (VOID *)(UINTN)PldImgInfo->Entry[Idx].Base;
         InitRdLen = (UINTN)PldImgInfo->Entry[Idx].Size;
-      } else if (AsciiStrCmp (PldImgInfo->Entry[Idx].Name, "upld.cmdline") == 0) {
+      } else if (AsciiStrCmp (PldImgInfo->Entry[Idx].Name, ".upld.cmdline") == 0) {
         AsciiStrCpyS (CmdLineBuf, MAX_CMD_LINE_LEN, (CHAR8 *)(UINTN)PldImgInfo->Entry[Idx].Base);
       }
     }
   }
 
   if (KernelBuf != NULL) {
-    DEBUG ((EFI_D_ERROR, "Kernel  @ 0x%p\n", KernelBuf));
+    DEBUG ((EFI_D_ERROR, "Kernel  @ 0x%p:0x%08x\n", KernelBuf, (UINT32)KernelLen));
   }
   if (InitRdBuf != NULL) {
-    DEBUG ((EFI_D_ERROR, "InitRd  @ 0x%p \n", InitRdBuf));
+    DEBUG ((EFI_D_ERROR, "InitRd  @ 0x%p:0x%08x\n", InitRdBuf, (UINT32)InitRdLen));
   }
   if (InitRdBuf != NULL) {
     DEBUG ((EFI_D_ERROR, "CmdLine : 0x%a\n", CmdLineBuf));
   }
 
   if (KernelBuf != NULL) {
-    Bp = (BOOT_PARAMS *)KernelBuf;
-    Status = UpldLoadBzImage ((VOID*)Bp, InitRdBuf, InitRdLen, CmdLineBuf, MAX_CMD_LINE_LEN);
+    Status = UpldLoadBzImage (KernelBuf, InitRdBuf, InitRdLen, CmdLineBuf, MAX_CMD_LINE_LEN);
     if (!EFI_ERROR(Status)) {
+      Bp = (BOOT_PARAMS *)KernelBuf;
       UpldLinuxBoot (GetHobList(), (VOID *)Bp);
     }
     if (EFI_ERROR(Status)) {
