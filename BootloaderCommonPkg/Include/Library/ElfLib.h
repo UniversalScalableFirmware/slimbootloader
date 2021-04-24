@@ -14,6 +14,8 @@
 #define  ELF_CLASS32   1
 #define  ELF_CLASS64   2
 
+#define  ELF_PT_LOAD   1
+
 typedef struct {
   UINT8      *ImageBase;
   UINT32      EiClass;
@@ -30,6 +32,7 @@ typedef struct {
 } SECTION_POS;
 
 typedef struct {
+  UINT32      PtType;
   UINTN       Offset;
   UINTN       Length;
   UINTN       MemLen;

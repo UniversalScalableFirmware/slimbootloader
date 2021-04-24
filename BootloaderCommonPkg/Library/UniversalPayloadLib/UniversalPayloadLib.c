@@ -93,7 +93,7 @@ LoadUniversalPayload (
   for (Idx = 0; Idx < ElfCt.PhNum; Idx++) {
     Status = GetElfSegmentInfo (&ElfCt, Idx, &SegInfo);
     if (!EFI_ERROR(Status)) {
-      if (SegInfo.MemLen != SegInfo.Length) {
+      if ((SegInfo.PtType == ELF_PT_LOAD) && (SegInfo.MemLen != SegInfo.Length)) {
         Xip = FALSE;
         break;
       }
