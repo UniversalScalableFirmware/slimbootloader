@@ -186,4 +186,20 @@ LoadElfSegments (
   IN  ELF_IMAGE_CONTEXT       *ElfCt
   );
 
+/**
+  Calculate a ELF image size.
+
+  @param[in]  ElfCt               ELF image context pointer.
+
+  @retval EFI_INVALID_PARAMETER   ElfCt or SecPos is NULL.
+  @retval EFI_NOT_FOUND           Could not find the section.
+  @retval EFI_SUCCESS             Section posistion was filled successfully.
+**/
+EFI_STATUS
+EFIAPI
+CalculateElfImageSize (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  OUT UINTN                *Size
+  );
+
 #endif /* __ELF_LIB_H__ */

@@ -42,7 +42,7 @@ LoadUniversalPayload (
   CHAR8                         *SecName;
   SECTION_POS                    SecPos;
   SEGMENT_INFO                   SegInfo;
-  UINT32                         ImageSize;
+  UINTN                          ImageSize;
   BOOLEAN                        Xip;
 
   if ((ImageBase == NULL) || (PayloadInfo == NULL)) {
@@ -82,11 +82,11 @@ LoadUniversalPayload (
     return EFI_UNSUPPORTED;
   }
 
-  Status = GetElfSectionPos (&ElfCt, ElfCt.ShNum - 1, &SecPos);
+  Status = CalculateElfImageSize (&ElfCt, &ImageSize);
   if (EFI_ERROR(Status)) {
     return EFI_ABORTED;
   }
-  ImageSize = SecPos.Offset + SecPos.Length;
+  DEBUG ((DEBUG_INFO, "UPLD Image Size: 0x%08X\n", ImageSize));
 
   // Determine if it can be executed in place
   Xip = TRUE;
@@ -101,13 +101,13 @@ LoadUniversalPayload (
   }
 
   if (Xip) {
-    DEBUG ((DEBUG_INFO, "Relocate ELF\n"));
+    DEBUG ((DEBUG_INFO, "UPLD Relocate ELF\n"));
     Status = RelocateElfSections (&ElfCt);
     if (EFI_ERROR(Status)) {
       return EFI_ABORTED;
     }
   } else {
-    DEBUG ((DEBUG_INFO, "Load ELF\n"));
+    DEBUG ((DEBUG_INFO, "UPLD Load ELF\n"));
     Status = LoadElfSegments (&ElfCt);
     if (EFI_ERROR(Status)) {
       return EFI_ABORTED;

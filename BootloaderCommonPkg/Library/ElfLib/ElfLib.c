@@ -460,3 +460,53 @@ GetElfSegmentInfo (
 
   return EFI_SUCCESS;
 }
+
+
+/**
+  Calculate a ELF image size.
+
+  @param[in]  ElfCt               ELF image context pointer.
+
+  @retval EFI_INVALID_PARAMETER   ElfCt or SecPos is NULL.
+  @retval EFI_NOT_FOUND           Could not find the section.
+  @retval EFI_SUCCESS             Section posistion was filled successfully.
+**/
+EFI_STATUS
+EFIAPI
+CalculateElfImageSize (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  OUT UINTN                *Size
+  )
+{
+  EFI_STATUS     Status;
+  UINTN          ImageSize1;
+  UINTN          ImageSize2;
+  SECTION_POS    SecPos;
+  Elf32_Ehdr    *Elf32Hdr;
+  Elf64_Ehdr    *Elf64Hdr;
+
+  if ((ElfCt == NULL) || (Size == NULL)) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  // Use last section as end of file
+  Status = GetElfSectionPos (ElfCt, ElfCt->ShNum - 1, &SecPos);
+  if (EFI_ERROR(Status)) {
+    return EFI_UNSUPPORTED;
+  }
+  ImageSize1 = SecPos.Offset + SecPos.Length;
+
+  // Use end of section header as end of file
+  ImageSize2 = 0;
+  if (ElfCt->EiClass == ELFCLASS32) {
+    Elf32Hdr   = (Elf32_Ehdr *)ElfCt->ImageBase;
+    ImageSize2 = Elf32Hdr->e_shoff + Elf32Hdr->e_shentsize * Elf32Hdr->e_shnum;
+  } else if (ElfCt->EiClass == ELFCLASS64) {
+    Elf64Hdr   = (Elf64_Ehdr *)ElfCt->ImageBase;
+    ImageSize2 = (UINTN)(Elf64Hdr->e_shoff + Elf64Hdr->e_shentsize * Elf64Hdr->e_shnum);
+  }
+
+  *Size = MAX(ImageSize1, ImageSize2);
+
+  return EFI_SUCCESS;
+}
