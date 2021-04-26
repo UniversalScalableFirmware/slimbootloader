@@ -18,13 +18,14 @@ typedef  EFI_STATUS  (EFIAPI *UNIVERSAL_PAYLOAD_ENTRYPOINT) (VOID *HobList);
 
 typedef struct {
   UINT32                          Identifier;
-  UINT16                          HeaderLength;
-  UINT8                           HeaderRevision;
-  UINT8                           Reserved;
-  UINT64                          Revision;
-  UINT64                          Capability;
-  CHAR8                           ImageId[16];
+  UINT32                          HeaderLength;
+  UINT16                          SpecRevision;
+  UINT8                           Reserved[2];
+  UINT32                          Revision;
+  UINT32                          Attribute;
+  UINT32                          Capability;
   CHAR8                           ProducerId[16];
+  CHAR8                           ImageId[16];
 } UPLD_INFO_HEADER;
 
 #define  MAX_PLD_IMAGE_ENTRY      4
