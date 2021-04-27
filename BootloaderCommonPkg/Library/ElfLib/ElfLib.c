@@ -165,6 +165,7 @@ ParseElfImage (
     return EFI_INVALID_PARAMETER;
   }
 
+  ZeroMem (ElfCt, sizeof(ELF_IMAGE_CONTEXT));
   ElfCt->ImageBase = (UINT8 *)ImageBase;
   if (!IsElfImage (ElfCt->ImageBase)) {
     return EFI_UNSUPPORTED;
@@ -374,7 +375,6 @@ GetElfSectionPos (
   return EFI_SUCCESS;
 }
 
-
 /**
   Relocate all sections in a ELF image to current location.
 
@@ -386,7 +386,7 @@ GetElfSectionPos (
 **/
 EFI_STATUS
 EFIAPI
-RelocateElfSections  (
+RelocateElfSections (
   IN    ELF_IMAGE_CONTEXT      *ElfCt
   )
 {
@@ -437,6 +437,7 @@ GetElfSegmentInfo (
   if (ElfCt->EiClass == ELFCLASS32) {
     Elf32Phdr = GetElf32SegmentByIndex (ElfCt, SegIdx);
     if (Elf32Phdr != NULL) {
+      SegInfo->PtType  = Elf32Phdr->p_type;
       SegInfo->Offset  = Elf32Phdr->p_offset;
       SegInfo->Length  = Elf32Phdr->p_filesz;
       SegInfo->MemLen  = Elf32Phdr->p_memsz;
@@ -446,6 +447,7 @@ GetElfSegmentInfo (
   } else if (ElfCt->EiClass == ELFCLASS64) {
     Elf64Phdr = GetElf64SegmentByIndex (ElfCt, SegIdx);
     if (Elf64Phdr != NULL) {
+      SegInfo->PtType  = Elf64Phdr->p_type;
       SegInfo->Offset  = (UINTN)Elf64Phdr->p_offset;
       SegInfo->Length  = (UINTN)Elf64Phdr->p_filesz;
       SegInfo->MemLen  = (UINTN)Elf64Phdr->p_memsz;

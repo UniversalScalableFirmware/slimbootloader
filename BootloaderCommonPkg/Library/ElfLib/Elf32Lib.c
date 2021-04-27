@@ -107,12 +107,19 @@ LoadElf32Segments (
   Elf32_Phdr   *ProgramHdrBase;
   UINT16        Index;
   UINT8        *ImageBase;
+  UINTN         Delta;
 
   if (ElfCt == NULL) {
     return EFI_INVALID_PARAMETER;
   }
 
   ImageBase = ElfCt->ImageBase;
+  if (ElfCt->NewBase != NULL) {
+    Delta = MAX_UINTN;
+  } else {
+    Delta = 0;
+  }
+
   Elf32Hdr       = (Elf32_Ehdr *)ImageBase;
   ProgramHdrBase = (Elf32_Phdr *)(ImageBase + Elf32Hdr->e_phoff);
   for (Index = 0; Index < Elf32Hdr->e_phnum; Index++) {
@@ -128,20 +135,24 @@ LoadElf32Segments (
       return EFI_LOAD_ERROR;
     }
 
-    CopyMem ((VOID *)(UINTN)ProgramHdr->p_paddr,
+    if (Delta == MAX_UINTN) {
+      Delta = (UINTN)ElfCt->NewBase - (ProgramHdr->p_paddr - (ProgramHdr->p_paddr & 0xFFF));
+    }
+    CopyMem ((VOID *)(UINTN)(ProgramHdr->p_paddr + Delta),
         ImageBase + ProgramHdr->p_offset,
         (UINTN)ProgramHdr->p_filesz);
 
     if (ProgramHdr->p_memsz > ProgramHdr->p_filesz) {
-      ZeroMem ((VOID *)(UINTN)(ProgramHdr->p_paddr + ProgramHdr->p_filesz),
+      ZeroMem ((VOID *)(UINTN)(ProgramHdr->p_paddr + Delta + ProgramHdr->p_filesz),
         (UINTN)(ProgramHdr->p_memsz - ProgramHdr->p_filesz));
     }
   }
 
-  ElfCt->Entry = Elf32Hdr->e_entry;
+  ElfCt->Delta = Delta;
+  ElfCt->Entry = Elf32Hdr->e_entry + Delta;
+
   return EFI_SUCCESS;
 }
-
 
 EFI_STATUS
 EFIAPI
@@ -149,7 +160,6 @@ RelocateElf32Sections  (
   IN    ELF_IMAGE_CONTEXT      *ElfCt
   )
 {
-  EFI_STATUS       Status;
   Elf32_Ehdr      *Elf32Hdr;
   Elf32_Shdr      *Rel32Shdr;
   Elf32_Shdr      *Sec32Shdr;
@@ -160,7 +170,7 @@ RelocateElf32Sections  (
   UINT32           Offset;
   UINT32          *Ptr32;
   UINT8            RelType;
-  CHAR8           *Name;
+
 
   Elf32Hdr  = (Elf32_Ehdr *)ElfCt->ImageBase;
   if (Elf32Hdr->e_machine != EM_386) {
@@ -176,7 +186,7 @@ RelocateElf32Sections  (
       if (!IsTextShdr(Sec32Shdr) && !IsDataShdr(Sec32Shdr)) {
         continue;
       }
-
+      DEBUG ((DEBUG_INFO, "Relocate SEC %d\n", Rel32Shdr->sh_info));
       for (RelIdx = 0; RelIdx < Rel32Shdr->sh_size; RelIdx += Rel32Shdr->sh_entsize) {
         Rel32Entry = (Elf32_Rel *)((UINT8*)Elf32Hdr + Rel32Shdr->sh_offset + RelIdx);
         RelType = ELF32_R_TYPE(Rel32Entry->r_info);
@@ -191,23 +201,27 @@ RelocateElf32Sections  (
             //
             // Creates a relative relocation entry from the absolute entry.
             //
-            Offset = Sec32Shdr->sh_offset + (Rel32Entry->r_offset - Sec32Shdr->sh_addr);
-            Ptr32  = (UINT32 *)(ElfCt->ImageBase + Offset);
-            *Ptr32 = *Ptr32 - Sec32Shdr->sh_addr + Sec32Shdr->sh_offset + (UINT32)(UINTN)ElfCt->ImageBase;
+            if (ElfCt->Delta == 0) {
+              Offset  = Sec32Shdr->sh_offset + (Rel32Entry->r_offset - Sec32Shdr->sh_addr);
+              Ptr32   = (UINT32 *)(ElfCt->ImageBase + Offset);
+              *Ptr32 += Sec32Shdr->sh_offset + (UINT32)(UINTN)ElfCt->ImageBase - Sec32Shdr->sh_addr;
+            } else {
+              Ptr32   = (UINT32 *)(Rel32Entry->r_offset + ElfCt->Delta);
+              *Ptr32 += (UINT32)ElfCt->Delta;
+            }
             break;
           default:
             DEBUG ((DEBUG_INFO, "Unsupported relocation type %02X\n", RelType));
         }
       }
 
-      Status = GetElfSectionName (ElfCt, Rel32Shdr->sh_info, &Name);
-      if (!EFI_ERROR(Status) && AsciiStrCmp (Name, ".text") == 0) {
-        Elf32Hdr->e_entry = Elf32Hdr->e_entry - Sec32Shdr->sh_addr + (UINT32)(UINTN)ElfCt->ImageBase + Sec32Shdr->sh_offset;
-        ElfCt->Entry      = (UINTN)Elf32Hdr->e_entry;
+      if (ElfCt->NewBase == NULL) {
+        ElfCt->Entry = (UINTN)(Elf32Hdr->e_entry - Sec32Shdr->sh_addr + (UINT32)(UINTN)ElfCt->ImageBase + Sec32Shdr->sh_offset);
+      } else {
+        ElfCt->Entry = (UINTN)(Elf32Hdr->e_entry + ElfCt->Delta);
       }
     }
   }
 
   return EFI_SUCCESS;
 }
-

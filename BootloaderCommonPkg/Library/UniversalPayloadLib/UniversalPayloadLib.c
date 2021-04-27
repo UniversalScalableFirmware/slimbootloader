@@ -43,7 +43,9 @@ LoadUniversalPayload (
   SECTION_POS                    SecPos;
   SEGMENT_INFO                   SegInfo;
   UINTN                          ImageSize;
-  BOOLEAN                        Xip;
+  BOOLEAN                        NeedReloc;
+  BOOLEAN                        NeedLoad;
+  BOOLEAN                        LowBase;
 
   if ((ImageBase == NULL) || (PayloadInfo == NULL)) {
     return EFI_INVALID_PARAMETER;
@@ -89,26 +91,45 @@ LoadUniversalPayload (
   DEBUG ((DEBUG_INFO, "UPLD Image Size: 0x%08X\n", ImageSize));
 
   // Determine if it can be executed in place
-  Xip = TRUE;
+  NeedLoad  = FALSE;
+  LowBase   = FALSE;
   for (Idx = 0; Idx < ElfCt.PhNum; Idx++) {
     Status = GetElfSegmentInfo (&ElfCt, Idx, &SegInfo);
     if (!EFI_ERROR(Status)) {
-      if ((SegInfo.PtType == ELF_PT_LOAD) && (SegInfo.MemLen != SegInfo.Length)) {
-        Xip = FALSE;
+      if (SegInfo.PtType != ELF_PT_LOAD) {
+        continue;
+      }
+      if (SegInfo.MemAddr < SIZE_1MB) {
+        // Required base is too low, adjust to start from 1MB
+        LowBase  = TRUE;
+      }
+      if (SegInfo.MemLen != SegInfo.Length) {
+        // Not enough space to execute at current file layout image
+        NeedLoad = TRUE;
         break;
       }
     }
   }
 
-  if (Xip) {
-    DEBUG ((DEBUG_INFO, "UPLD Relocate ELF\n"));
-    Status = RelocateElfSections (&ElfCt);
+  NeedReloc = TRUE;
+  if (NeedLoad) {
+    // Load ELF into the required base
+    DEBUG ((DEBUG_INFO, "UPLD Load ELF\n"));
+    if (LowBase) {
+      ElfCt.NewBase = (UINT8 *)SIZE_1MB;
+    } else {
+      NeedReloc = FALSE;
+    }
+    Status = LoadElfSegments (&ElfCt);
     if (EFI_ERROR(Status)) {
       return EFI_ABORTED;
     }
-  } else {
-    DEBUG ((DEBUG_INFO, "UPLD Load ELF\n"));
-    Status = LoadElfSegments (&ElfCt);
+  }
+
+  if (NeedReloc) {
+    // Try to execute in place, need to fix the image relocation at current location
+    DEBUG ((DEBUG_INFO, "UPLD Relocate ELF\n"));
+    Status = RelocateElfSections (&ElfCt);
     if (EFI_ERROR(Status)) {
       return EFI_ABORTED;
     }
@@ -118,7 +139,7 @@ LoadUniversalPayload (
   PayloadInfo->Machine     = (ElfCt.EiClass == ELF_CLASS32) ? IMAGE_FILE_MACHINE_I386 : IMAGE_FILE_MACHINE_X64;
   PayloadInfo->ImageCount  = ImgIdx;
   PayloadInfo->EntryPoint  = (UNIVERSAL_PAYLOAD_ENTRYPOINT)ElfCt.Entry;
-  PayloadInfo->PayloadSize = ImageSize;
+  PayloadInfo->PayloadSize = (UINT32)ImageSize;
   PayloadInfo->PayloadBase = (UINT32)(UINTN)ImageBase;
 
   return EFI_SUCCESS;

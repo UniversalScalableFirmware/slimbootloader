@@ -18,11 +18,13 @@
 
 typedef struct {
   UINT8      *ImageBase;
+  UINT8      *NewBase;
   UINT32      EiClass;
   UINT32      ShNum;
   UINT32      PhNum;
   UINTN       ShStrOff;
   UINTN       ShStrLen;
+  UINTN       Delta;
   UINTN       Entry;
 } ELF_IMAGE_CONTEXT;
 

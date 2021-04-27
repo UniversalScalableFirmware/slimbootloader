@@ -64,7 +64,7 @@ SecStartup (
     DEBUG ((EFI_D_ERROR, "InitRd  @ 0x%p:0x%08x\n", InitRdBuf, (UINT32)InitRdLen));
   }
   if (InitRdBuf != NULL) {
-    DEBUG ((EFI_D_ERROR, "CmdLine : 0x%a\n", CmdLineBuf));
+    DEBUG ((EFI_D_ERROR, "CmdLine : %a\n", CmdLineBuf));
   }
 
   if (KernelBuf != NULL) {
