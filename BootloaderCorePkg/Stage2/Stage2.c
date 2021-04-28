@@ -190,7 +190,7 @@ NormalBootPath (
     // Assume Universal Payload first
     Status = LoadUniversalPayload (Dst, &PayloadInfo);
     if (Status == EFI_SUCCESS) {
-      DEBUG ((DEBUG_INFO, "Univeral Payload\n"));
+      DEBUG ((DEBUG_INFO, "Univeral Payload %a v%08X\n", PayloadInfo.Info.ImageId, PayloadInfo.Info.Revision));
       PldMachine = (UINT16)PayloadInfo.Machine;
       PldEntry   = (PAYLOAD_ENTRY)PayloadInfo.EntryPoint;
       HobSize    = sizeof (LOADED_PAYLOAD_IMAGE_INFO) + sizeof(PAYLOAD_IMAGE_ENTRY) * (PayloadInfo.ImageCount + 1);

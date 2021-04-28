@@ -68,6 +68,7 @@ LoadUniversalPayload (
       Status = GetElfSectionPos (&ElfCt, Idx, &SecPos);
       if (!EFI_ERROR(Status)) {
         UpldInfo = (UPLD_INFO_HEADER *)(ElfCt.ImageBase + SecPos.Offset);
+        CopyMem (&PayloadInfo->Info, UpldInfo, sizeof(UPLD_INFO_HEADER));
       }
     } else if (AsciiStrnCmp(SecName, UPLD_IMAGE_SEC_NAME_PREFIX, 6) == 0) {
       Status = GetElfSectionPos (&ElfCt, Idx, &SecPos);
