@@ -222,10 +222,12 @@ RelocateElf64Sections  (
         }
       }
 
-      if (ElfCt->NewBase == NULL) {
-        ElfCt->Entry = (UINTN)(Elf64Hdr->e_entry - Sec64Shdr->sh_addr + (UINTN)ElfCt->ImageBase + Sec64Shdr->sh_offset);
-      } else {
-        ElfCt->Entry = (UINTN)(Elf64Hdr->e_entry + ElfCt->Delta);
+      if ((Elf64Hdr->e_entry >= Sec64Shdr->sh_addr) && (Elf64Hdr->e_entry < Sec64Shdr->sh_addr + Sec64Shdr->sh_size)) {
+        if (ElfCt->NewBase == NULL) {
+          ElfCt->Entry = (UINTN)(Elf64Hdr->e_entry - Sec64Shdr->sh_addr + (UINTN)ElfCt->ImageBase + Sec64Shdr->sh_offset);
+        } else {
+          ElfCt->Entry = (UINTN)(Elf64Hdr->e_entry + ElfCt->Delta);
+        }
       }
     }
   }

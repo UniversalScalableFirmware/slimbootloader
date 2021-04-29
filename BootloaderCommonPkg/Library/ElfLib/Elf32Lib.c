@@ -215,10 +215,12 @@ RelocateElf32Sections  (
         }
       }
 
-      if (ElfCt->NewBase == NULL) {
-        ElfCt->Entry = (UINTN)(Elf32Hdr->e_entry - Sec32Shdr->sh_addr + (UINT32)(UINTN)ElfCt->ImageBase + Sec32Shdr->sh_offset);
-      } else {
-        ElfCt->Entry = (UINTN)(Elf32Hdr->e_entry + ElfCt->Delta);
+      if ((Elf32Hdr->e_entry >= Sec32Shdr->sh_addr) && (Elf32Hdr->e_entry < Sec32Shdr->sh_addr + Sec32Shdr->sh_size)) {
+        if (ElfCt->NewBase == NULL) {
+          ElfCt->Entry = (UINTN)(Elf32Hdr->e_entry - Sec32Shdr->sh_addr + (UINT32)(UINTN)ElfCt->ImageBase + Sec32Shdr->sh_offset);
+        } else {
+          ElfCt->Entry = (UINTN)(Elf32Hdr->e_entry + ElfCt->Delta);
+        }
       }
     }
   }
