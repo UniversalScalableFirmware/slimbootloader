@@ -93,7 +93,12 @@
   gSmmInformationGuid
   gLoaderMpCpuTaskInfoGuid
   gEfiAcpi20TableGuid
-  gEfiSmbios3TableGuid
+  gEfiSmbiosTableGuid
+  gPldSmmRegisterInfoGuid
+  gEfiSmmSmramMemoryGuid
+  gSpiFlashInfoGuid
+  gNvVariableInfoGuid
+  gPldSerialPortInfoGuid
 
 [Pcd]
   gPlatformCommonLibTokenSpaceGuid.PcdMaxLibraryDataEntry

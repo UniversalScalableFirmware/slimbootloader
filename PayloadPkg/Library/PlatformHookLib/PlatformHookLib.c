@@ -62,7 +62,7 @@ PlatformHookSerialPortInitialize (
 {
   RETURN_STATUS                  Status;
   EFI_HOB_GUID_TYPE             *GuidHob;
-  SERIAL_PORT_INFO              *SerialPortInfo;
+  SERIAL_PORT_INFO              *PldSerialInfo;
 
   GuidHob = GetNextGuidHob (&gLoaderSerialPortInfoGuid, (VOID *)(UINTN)PcdGet32 (PcdPayloadHobList));
   if (GuidHob == NULL) {
@@ -70,23 +70,31 @@ PlatformHookSerialPortInitialize (
     return RETURN_NOT_FOUND;
   }
 
-  SerialPortInfo = (SERIAL_PORT_INFO *)GET_GUID_HOB_DATA (GuidHob);
-  Status = PcdSetBoolS (PcdSerialUseMmio, SerialPortInfo->UseMmio);
+  PldSerialInfo = (SERIAL_PORT_INFO *)GET_GUID_HOB_DATA (GuidHob);
+  if (PldSerialInfo->Type == 2) { //MMIO
+    Status = PcdSetBoolS (PcdSerialUseMmio, TRUE);
+  } else { //IO
+    Status = PcdSetBoolS (PcdSerialUseMmio, FALSE);
+  }
+  if (RETURN_ERROR (Status)) {
+    return Status;
+  }
+  Status = PcdSet64S (PcdSerialRegisterBase, (UINT64) PldSerialInfo->BaseAddr);
   if (RETURN_ERROR (Status)) {
     return Status;
   }
 
-  Status = PcdSet64S (PcdSerialRegisterBase, SerialPortInfo->RegisterBase);
+  Status = PcdSet32S (PcdSerialRegisterStride, PldSerialInfo->RegWidth);
   if (RETURN_ERROR (Status)) {
     return Status;
   }
 
-  Status = PcdSet32S (PcdSerialRegisterStride, SerialPortInfo->RegisterWidth);
+  Status = PcdSet32S (PcdSerialBaudRate, PldSerialInfo->Baud);
   if (RETURN_ERROR (Status)) {
     return Status;
   }
 
-  Status = PcdSet32S (PcdSerialBaudRate, SerialPortInfo->BaudRate);
+  Status = PcdSet32S (PcdSerialClockRate, PldSerialInfo->InputHertz);
   if (RETURN_ERROR (Status)) {
     return Status;
   }

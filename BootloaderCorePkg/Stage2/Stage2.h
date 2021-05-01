@@ -51,8 +51,6 @@
 #include <Guid/GraphicsInfoHob.h>
 #include <Guid/SmmInformationGuid.h>
 #include <Guid/MpCpuTaskInfoHob.h>
-#include <Guid/AcpiTableGuid.h>
-#include <Guid/SmbiosTableGuid.h>
 #include <Service/PlatformService.h>
 #include <Pi/PiBootMode.h>
 #include <FspEas.h>
@@ -63,6 +61,14 @@
 #include <Library/ElfLib.h>
 #include <Library/SmbiosInitLib.h>
 #include <VerInfo.h>
+#include <Guid/SmramMemoryReserve.h>
+#include <Guid/SmmRegisterInfoGuid.h>
+//#include <Guid/SmmS3CommunicationInfoGuid.h>
+#include <Guid/SpiFlashInfoGuid.h>
+#include <Guid/NvVariableInfoGuid.h>
+#include <Guid/AcpiTableGuid.h>
+#include <Guid/SmbiosTableGuid.h>
+#include <Guid/PldSerialPortInfoGuid.h>
 
 #define UIMAGE_FIT_MAGIC               (0x56190527)
 

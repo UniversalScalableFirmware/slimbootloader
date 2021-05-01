@@ -267,8 +267,6 @@ SplitMemroyMap (
     }
   }
 
-//      BuildResourceDescriptorHob (ResHob->ResourceType , ResHob->ResourceAttribute, ResHob->PhysicalStart, ResHob->ResourceLength);
-
   MemoryMapInfo->Entry[NewIdx].Base = PcdGet32(PcdFlashBaseAddress);
   MemoryMapInfo->Entry[NewIdx].Size = PcdGet32(PcdFlashSize);
   MemoryMapInfo->Entry[NewIdx].Type = MEM_MAP_TYPE_RESERVED;
@@ -360,11 +358,12 @@ BuildBaseInfoHob (
   // Build serial port hob
   SerialPortInfo = BuildGuidHob (&gLoaderSerialPortInfoGuid, sizeof (SERIAL_PORT_INFO));
   if (SerialPortInfo != NULL) {
-    SerialPortInfo->Reversion     = 0;
-    SerialPortInfo->UseMmio       = FALSE;
-    SerialPortInfo->RegisterBase  = 0x3F8;
-    SerialPortInfo->BaudRate      = 115200;
-    SerialPortInfo->RegisterWidth = 1;
+    SerialPortInfo->Type        = 1;
+    SerialPortInfo->BaseAddr    = 0x3F8;
+    SerialPortInfo->Baud        = 115200;
+    SerialPortInfo->RegWidth    = 1;
+    SerialPortInfo->InputHertz  = 1843200;
+    SerialPortInfo->UartPciAddr = 0;
   }
 
   // Build graphic info hob
@@ -626,29 +625,83 @@ BuildExtraInfoHob (
   if (GetPayloadId () == 0) {
     Length        = sizeof (SYS_CPU_TASK_HOB);
     SysCpuTaskHob = BuildGuidHob (&gLoaderMpCpuTaskInfoGuid, Length);
-
+    ZeroMem (SysCpuTaskHob, sizeof (SYS_CPU_TASK_HOB));
     if (SysCpuTaskHob != NULL) {
       SysCpuTaskHob->SysCpuTask = (UINTN) MpGetTask();
     }
   }
 
-  // Required by the new payload
+  //
+  // Build HOBs for universal payload
+  //
+
+  // ACPI table HOB
   ACPI_TABLE_HOB   *AcpiHob;
   AcpiHob = BuildGuidHob (&gEfiAcpi20TableGuid, sizeof (ACPI_TABLE_HOB));
   if (AcpiHob != NULL) {
+    ZeroMem (AcpiHob, sizeof (ACPI_TABLE_HOB));
     AcpiHob->TableAddress = S3Data->AcpiBase;
   }
 
+  // SMBIOS table HOB
   SMBIOS_TABLE_HOB   *SmbiosHob;
-  SmbiosHob = BuildGuidHob (&gEfiSmbios3TableGuid, sizeof (SMBIOS_TABLE_HOB));
+  SmbiosHob = BuildGuidHob (&gEfiSmbiosTableGuid, sizeof (SMBIOS_TABLE_HOB));
   if (SmbiosHob != NULL) {
+    ZeroMem (SmbiosHob, sizeof (SMBIOS_TABLE_HOB));
     SmbiosHob->TableAddress = PcdGet32 (PcdSmbiosTablesBase);
   }
 
-  // Build serial HOB
+  // Build serial port hob
+  PLD_SERIAL_PORT_INFO   *PldSerialPortInfo;
+  PldSerialPortInfo = BuildGuidHob (&gPldSerialPortInfoGuid, sizeof (PLD_SERIAL_PORT_INFO));
+  if (PldSerialPortInfo != NULL) {
+    ZeroMem (PldSerialPortInfo, sizeof (PLD_SERIAL_PORT_INFO));
+    PldSerialPortInfo->Reversion     = 0;
+    PldSerialPortInfo->UseMmio       = FALSE;
+    PldSerialPortInfo->RegisterBase  = 0x3F8;
+    PldSerialPortInfo->BaudRate      = 115200;
+    PldSerialPortInfo->RegisterWidth = 1;
+  }
 
-  // 
+  // SMM register HOB
+  PLD_SMM_REGISTERS   *SmmRegisterHob;
+  Length = sizeof (PLD_SMM_REGISTERS) + 5 * sizeof (PLD_GENERIC_REGISTER);
+  SmmRegisterHob = BuildGuidHob (&gPldSmmRegisterInfoGuid, Length);
+  if (SmmRegisterHob != NULL) {
+    ZeroMem (SmmRegisterHob, Length);
+    PlatformUpdateHobInfo (&gPldSmmRegisterInfoGuid, SmmRegisterHob);
+  }
 
+  // SMM memory HOB
+  EFI_SMRAM_HOB_DESCRIPTOR_BLOCK   *SmmMemoryHob;
+  Length = sizeof (EFI_SMRAM_HOB_DESCRIPTOR_BLOCK) + sizeof (EFI_SMRAM_DESCRIPTOR);
+  SmmMemoryHob = BuildGuidHob (&gEfiSmmSmramMemoryGuid, Length);
+  if (SmmMemoryHob != NULL) {
+    ZeroMem (SmmMemoryHob, Length);
+    PlatformUpdateHobInfo (&gEfiSmmSmramMemoryGuid, SmmMemoryHob);
+  }
+
+  // SPI Flash HOB
+  SPI_FLASH_INFO   *SpiFlashInfoHob;
+  SpiFlashInfoHob = BuildGuidHob (&gSpiFlashInfoGuid, sizeof (SPI_FLASH_INFO));
+  if (SpiFlashInfoHob != NULL) {
+    ZeroMem (SpiFlashInfoHob,  sizeof (SPI_FLASH_INFO));
+    SpiFlashInfoHob->SpiAddress.Address = 0;
+    PlatformUpdateHobInfo (&gSpiFlashInfoGuid, SpiFlashInfoHob);
+  }
+
+  // SPI NV variable HOB
+  NV_VARIABLE_INFO   *NvVariableHob;
+  NvVariableHob = BuildGuidHob (&gNvVariableInfoGuid, sizeof (NV_VARIABLE_INFO));
+  if (NvVariableHob != NULL) {
+    ZeroMem (NvVariableHob,  sizeof (NV_VARIABLE_INFO));
+    PlatformUpdateHobInfo (&gNvVariableInfoGuid, NvVariableHob);
+  }
+
+
+  //
+  // Build CPU memory space and IO space hob
+  //
   UINT32                           RegEax;
   UINT8                            PhysicalAddressBits;
   EFI_RESOURCE_ATTRIBUTE_TYPE      ResourceAttribute;
