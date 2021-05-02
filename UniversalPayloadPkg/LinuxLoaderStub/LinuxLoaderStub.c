@@ -43,15 +43,15 @@ SecStartup (
   GuidHob = GetNextGuidHob (&gLoadedPayloadImageInfoGuid, GetHobList());
   if (GuidHob != NULL) {
     PldImgInfo  = (LOADED_PAYLOAD_IMAGE_INFO *) GET_GUID_HOB_DATA (GuidHob);
-    for (Idx = 1; Idx < PldImgInfo->EntryNum; Idx++) {
+    for (Idx = 0; Idx < PldImgInfo->EntryNum; Idx++) {
       DEBUG ((DEBUG_INFO, "Found loaded image '%a'\n", PldImgInfo->Entry[Idx].Name));
-      if (AsciiStrCmp (PldImgInfo->Entry[Idx].Name, ".upld.kernel") == 0) {
+      if (AsciiStrCmp (PldImgInfo->Entry[Idx].Name, "kernel") == 0) {
         KernelBuf = (VOID *)(UINTN)PldImgInfo->Entry[Idx].Base;
         KernelLen = (UINTN)(UINTN)PldImgInfo->Entry[Idx].Size;
-      } else if (AsciiStrCmp (PldImgInfo->Entry[Idx].Name, ".upld.initrd") == 0) {
+      } else if (AsciiStrCmp (PldImgInfo->Entry[Idx].Name, "initrd") == 0) {
         InitRdBuf = (VOID *)(UINTN)PldImgInfo->Entry[Idx].Base;
         InitRdLen = (UINTN)PldImgInfo->Entry[Idx].Size;
-      } else if (AsciiStrCmp (PldImgInfo->Entry[Idx].Name, ".upld.cmdline") == 0) {
+      } else if (AsciiStrCmp (PldImgInfo->Entry[Idx].Name, "cmdline") == 0) {
         AsciiStrCpyS (CmdLineBuf, MAX_CMD_LINE_LEN, (CHAR8 *)(UINTN)PldImgInfo->Entry[Idx].Base);
       }
     }

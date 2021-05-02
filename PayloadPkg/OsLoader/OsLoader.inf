@@ -79,7 +79,7 @@
   TrustyBootLib
   UsbInitLib
   UsbKbLib
-  ElfLib
+  UniversalPayloadLib
   LiteFvLib
   LinuxLib
   ContainerLib

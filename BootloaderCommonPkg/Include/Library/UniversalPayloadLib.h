@@ -12,9 +12,12 @@
 
 typedef  EFI_STATUS  (EFIAPI *UNIVERSAL_PAYLOAD_ENTRYPOINT) (VOID *HobList);
 
-#define  UPLD_INFO_SEC_NAME           ".upld_info"
-#define  UPLD_IMAGE_SEC_NAME_PREFIX   ".upld."
-#define  UPLD_IDENTIFIER              SIGNATURE_32('U', 'P', 'L', 'D')
+#define PLD_IDENTIFIER                   SIGNATURE_32('U', 'P', 'L', 'D')
+#define PLD_INFO_SEC_NAME                ".upld_info"
+#define PLD_EXTRA_SEC_NAME_PREFIX        ".upld."
+#define PLD_EXTRA_SEC_NAME_PREFIX_LENGTH (sizeof (PLD_EXTRA_SEC_NAME_PREFIX) - 1)
+
+#pragma pack(1)
 
 typedef struct {
   UINT32                          Identifier;
@@ -26,19 +29,20 @@ typedef struct {
   UINT32                          Capability;
   CHAR8                           ProducerId[16];
   CHAR8                           ImageId[16];
-} UPLD_INFO_HEADER;
+} PLD_INFO_HEADER;
 
 #define  MAX_PLD_IMAGE_ENTRY      4
 typedef struct {
-  UPLD_INFO_HEADER                Info;
-  UINT32                          Machine;
-  UINT32                          PayloadBase;
-  UINT32                          PayloadSize;
+  PLD_INFO_HEADER                 Info;
   UINT32                          ImageCount;
-  UNIVERSAL_PAYLOAD_ENTRYPOINT    EntryPoint;
+  UINT32                          Machine;
+  UINTN                           EntryPoint;
+  UINTN                           PayloadBase;
+  UINTN                           PayloadSize;
   PAYLOAD_IMAGE_ENTRY             LoadedImage[MAX_PLD_IMAGE_ENTRY];
 } LOADED_PAYLOAD_INFO;
 
+#pragma pack()
 
 /**
   Load universal payload image into memory.
@@ -53,7 +57,7 @@ typedef struct {
 **/
 EFI_STATUS
 EFIAPI
-LoadUniversalPayload (
+LoadElfPayload (
   IN  VOID                     *ImageBase,
   OUT LOADED_PAYLOAD_INFO      *PayloadInfo
 );

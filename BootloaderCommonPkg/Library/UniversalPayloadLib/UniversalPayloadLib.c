@@ -29,119 +29,70 @@
 **/
 EFI_STATUS
 EFIAPI
-LoadUniversalPayload (
+LoadElfPayload (
   IN  VOID                     *ImageBase,
   OUT LOADED_PAYLOAD_INFO      *PayloadInfo
   )
 {
   EFI_STATUS                     Status;
-  ELF_IMAGE_CONTEXT              ElfCt;
-  UPLD_INFO_HEADER              *UpldInfo;
-  UINT32                         Idx;
-  UINT16                         ImgIdx;
-  CHAR8                         *SecName;
-  SECTION_POS                    SecPos;
-  SEGMENT_INFO                   SegInfo;
-  UINTN                          ImageSize;
-  BOOLEAN                        NeedReloc;
-  BOOLEAN                        NeedLoad;
-  BOOLEAN                        LowBase;
+  ELF_IMAGE_CONTEXT              Context;
+  PLD_INFO_HEADER               *PldInfo;
+  UINT16                         ExtraDataCount;
+  UINT32                         Index;
+  CHAR8                         *SectionName;
+  UINTN                          Offset;
+  UINTN                          Size;
 
   if ((ImageBase == NULL) || (PayloadInfo == NULL)) {
     return EFI_INVALID_PARAMETER;
   }
 
-  Status = ParseElfImage (ImageBase, &ElfCt);
+  Status = ParseElfImage (ImageBase, &Context);
   if (EFI_ERROR(Status)) {
     return EFI_UNSUPPORTED;
   }
 
-  ImgIdx   = 0;
-  UpldInfo = NULL;
-  ZeroMem (PayloadInfo, sizeof(LOADED_PAYLOAD_INFO));
-  for (Idx = 0; Idx < ElfCt.ShNum; Idx++) {
-    Status = GetElfSectionName (&ElfCt, Idx, &SecName);
+  // Get PLD_INFO and number of additional PLD sections.
+  PldInfo        = NULL;
+  ExtraDataCount = 0;
+  for (Index = 0; Index < Context.ShNum; Index++) {
+    Status = GetElfSectionName (&Context, Index, &SectionName);
     if (EFI_ERROR(Status)) {
       continue;
     }
-    if (AsciiStrCmp(SecName, UPLD_INFO_SEC_NAME) == 0) {
-      Status = GetElfSectionPos (&ElfCt, Idx, &SecPos);
+    if (AsciiStrCmp(SectionName, PLD_INFO_SEC_NAME) == 0) {
+      Status = GetElfSectionPos (&Context, Index, &Offset, &Size);
       if (!EFI_ERROR(Status)) {
-        UpldInfo = (UPLD_INFO_HEADER *)(ElfCt.ImageBase + SecPos.Offset);
-        CopyMem (&PayloadInfo->Info, UpldInfo, sizeof(UPLD_INFO_HEADER));
+        PldInfo = (PLD_INFO_HEADER *)(Context.FileBase + Offset);
       }
-    } else if (AsciiStrnCmp(SecName, UPLD_IMAGE_SEC_NAME_PREFIX, 6) == 0) {
-      Status = GetElfSectionPos (&ElfCt, Idx, &SecPos);
-      if (!EFI_ERROR(Status) && (ImgIdx < ARRAY_SIZE(PayloadInfo->LoadedImage))) {
-        AsciiStrCpyS (PayloadInfo->LoadedImage[ImgIdx].Name, sizeof(PayloadInfo->LoadedImage[ImgIdx].Name), SecName);
-        PayloadInfo->LoadedImage[ImgIdx].Base = (UINTN)(ElfCt.ImageBase + SecPos.Offset);
-        PayloadInfo->LoadedImage[ImgIdx].Size = SecPos.Length;
-        ImgIdx++;
-      }
-    }
-  }
-
-  if ((UpldInfo == NULL) || (UpldInfo->Identifier != UPLD_IDENTIFIER)) {
-    return EFI_UNSUPPORTED;
-  }
-
-  Status = CalculateElfImageSize (&ElfCt, &ImageSize);
-  if (EFI_ERROR(Status)) {
-    return EFI_ABORTED;
-  }
-  DEBUG ((DEBUG_INFO, "UPLD Image Size: 0x%08X\n", ImageSize));
-
-  // Determine if it can be executed in place
-  NeedLoad  = FALSE;
-  LowBase   = FALSE;
-  for (Idx = 0; Idx < ElfCt.PhNum; Idx++) {
-    Status = GetElfSegmentInfo (&ElfCt, Idx, &SegInfo);
-    if (!EFI_ERROR(Status)) {
-      if (SegInfo.PtType != ELF_PT_LOAD) {
-        continue;
-      }
-      if (SegInfo.MemAddr < SIZE_1MB) {
-        // Required base is too low, adjust to start from 1MB
-        LowBase  = TRUE;
-      }
-      if (SegInfo.MemLen != SegInfo.Length) {
-        // Not enough space to execute at current file layout image
-        NeedLoad = TRUE;
-        break;
+    } else if (AsciiStrnCmp(SectionName, PLD_EXTRA_SEC_NAME_PREFIX, PLD_EXTRA_SEC_NAME_PREFIX_LENGTH) == 0) {
+      Status = GetElfSectionPos (&Context, Index, &Offset, &Size);
+      if (!EFI_ERROR (Status) && (ExtraDataCount < ARRAY_SIZE(PayloadInfo->LoadedImage))) {
+        AsciiStrCpyS (PayloadInfo->LoadedImage[ExtraDataCount].Name, sizeof(PayloadInfo->LoadedImage[ExtraDataCount].Name), SectionName + PLD_EXTRA_SEC_NAME_PREFIX_LENGTH);
+        PayloadInfo->LoadedImage[ExtraDataCount].Base = (UINTN)(Context.FileBase + Offset);
+        PayloadInfo->LoadedImage[ExtraDataCount].Size = Size;
+        ExtraDataCount++;
       }
     }
   }
 
-  NeedReloc = TRUE;
-  if (NeedLoad) {
-    // Load ELF into the required base
-    DEBUG ((DEBUG_INFO, "UPLD Load ELF\n"));
-    if (LowBase) {
-      ElfCt.NewBase = (UINT8 *)SIZE_1MB;
-    } else {
-      NeedReloc = FALSE;
-    }
-    Status = LoadElfSegments (&ElfCt);
-    if (EFI_ERROR(Status)) {
-      return EFI_ABORTED;
-    }
+  // Always try to run at preferred address
+  if (Context.ReloadRequired) {
+    Context.ImageAddress = Context.PreferredImageAddress;
   }
 
-  if (NeedReloc) {
-    // Try to execute in place, need to fix the image relocation at current location
-    DEBUG ((DEBUG_INFO, "UPLD Relocate ELF\n"));
-    Status = RelocateElfSections (&ElfCt);
-    if (EFI_ERROR(Status)) {
-      return EFI_ABORTED;
+  // Load ELF into the required base
+  Status = LoadElfImage (&Context);
+  if (!EFI_ERROR(Status)) {
+    if ((PldInfo != NULL) && (PldInfo->Identifier == PLD_IDENTIFIER)) {
+      CopyMem (&PayloadInfo->Info, PldInfo, sizeof(PLD_INFO_HEADER));
+      PayloadInfo->ImageCount  = ExtraDataCount;
     }
+    PayloadInfo->Machine     = (Context.EiClass == ELF_CLASS32) ? IMAGE_FILE_MACHINE_I386 : IMAGE_FILE_MACHINE_X64;
+    PayloadInfo->EntryPoint  = Context.EntryPoint;
+    PayloadInfo->PayloadSize = Context.FileSize;
+    PayloadInfo->PayloadBase = (UINTN)Context.FileBase;
   }
 
-  CopyMem (&PayloadInfo->Info, UpldInfo, sizeof(UPLD_INFO_HEADER));
-  PayloadInfo->Machine     = (ElfCt.EiClass == ELF_CLASS32) ? IMAGE_FILE_MACHINE_I386 : IMAGE_FILE_MACHINE_X64;
-  PayloadInfo->ImageCount  = ImgIdx;
-  PayloadInfo->EntryPoint  = (UNIVERSAL_PAYLOAD_ENTRYPOINT)ElfCt.Entry;
-  PayloadInfo->PayloadSize = (UINT32)ImageSize;
-  PayloadInfo->PayloadBase = (UINT32)(UINTN)ImageBase;
-
-  return EFI_SUCCESS;
+  return Status;
 }

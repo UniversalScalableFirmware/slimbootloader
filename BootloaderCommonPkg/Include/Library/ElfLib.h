@@ -17,66 +17,45 @@
 #define  ELF_PT_LOAD   1
 
 typedef struct {
-  UINT8      *ImageBase;
-  UINT8      *NewBase;
-  UINT32      EiClass;
-  UINT32      ShNum;
-  UINT32      PhNum;
-  UINTN       ShStrOff;
-  UINTN       ShStrLen;
-  UINTN       Delta;
-  UINTN       Entry;
+  RETURN_STATUS ParseStatus;             ///< Return the status after ParseElfImage().
+  UINT8         *FileBase;               ///< The source location in memory.
+  UINTN         FileSize;                ///< The size including sections that don't require loading.
+  UINT8         *PreferredImageAddress;  ///< The preferred image to be loaded. No relocation is needed if loaded to this address.
+  BOOLEAN       ReloadRequired;          ///< The image needs a new memory location for running.
+  UINT8         *ImageAddress;           ///< The destination memory address set by caller.
+  UINTN         ImageSize;               ///< The memory size for loading and execution.
+  UINT32        EiClass;
+  UINT32        ShNum;
+  UINT32        PhNum;
+  UINTN         ShStrOff;
+  UINTN         ShStrLen;
+  UINTN         EntryPoint;              ///< Return the actual entry point after LoadElfImage().
 } ELF_IMAGE_CONTEXT;
 
-typedef struct {
-  UINTN       Offset;
-  UINTN       Length;
-} SECTION_POS;
 
 typedef struct {
-  UINT32      PtType;
-  UINTN       Offset;
-  UINTN       Length;
-  UINTN       MemLen;
-  UINTN       MemAddr;
+  UINT32        PtType;
+  UINTN         Offset;
+  UINTN         Length;
+  UINTN         MemLen;
+  UINTN         MemAddr;
+  UINTN         Alignment;
 } SEGMENT_INFO;
 
+
 /**
-  Check if the image is a bootable ELF image.
+  Check if the ELF image is valid.
 
-  @param[in]  ImageBase      Memory address of an image
+  @param[in]  ImageBase       Memory address of an image.
 
-  @retval     TRUE           Image is a bootable ELF image
-  @retval     FALSE          Not a bootable ELF image
+  @retval     TRUE if valid.
+
 **/
 BOOLEAN
 EFIAPI
-IsElfImage (
-  IN  CONST VOID            *ImageBase
+IsElfFormat (
+  IN  CONST UINT8             *ImageBase
   );
-
-
-/**
-  Load the ELF image to specified address in ELF header.
-
-  This function loads ELF image segments into memory address specified
-  in ELF program header.
-
-  @param[in]  ImageBase           Memory address of an image.
-  @param[out] EntryPoint          The entry point of loaded ELF image.
-
-  @retval EFI_INVALID_PARAMETER   Input parameters are not valid.
-  @retval EFI_UNSUPPORTED         Unsupported binary type.
-  @retval EFI_LOAD_ERROR          ELF binary loading error.
-  @retval EFI_SUCCESS             ELF binary is loaded successfully.
-**/
-EFI_STATUS
-EFIAPI
-LoadElfImage (
-  IN        VOID                  *ImageBase,
-  OUT       VOID                 **EntryPoint
-  );
-
 
 /**
   Parse the ELF image info.
@@ -97,79 +76,6 @@ ParseElfImage (
   );
 
 /**
-  Get a ELF section name from its index.
-
-  @param[in]  ElfCt               ELF image context pointer.
-  @param[in]  SecIdx              ELF section index.
-  @param[out] SecName             The pointer to the section name.
-
-  @retval EFI_INVALID_PARAMETER   ElfCt or SecName is NULL.
-  @retval EFI_NOT_FOUND           Could not find the section.
-  @retval EFI_SUCCESS             Section name was filled successfully.
-**/
-EFI_STATUS
-EFIAPI
-GetElfSectionName (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SecIdx,
-  OUT CHAR8               **SecName
-  );
-
-
-/**
-  Get a ELF section name from its index.
-
-  @param[in]  ElfCt               ELF image context pointer.
-  @param[in]  SecIdx              ELF section index.
-  @param[out] SecPos              The pointer to the section postion.
-
-  @retval EFI_INVALID_PARAMETER   ElfCt or SecPos is NULL.
-  @retval EFI_NOT_FOUND           Could not find the section.
-  @retval EFI_SUCCESS             Section posistion was filled successfully.
-**/
-EFI_STATUS
-EFIAPI
-GetElfSectionPos (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SecIdx,
-  OUT SECTION_POS          *SecPos
-  );
-
-/**
-  Get a ELF program segment loading info.
-
-  @param[in]  ElfCt               ELF image context pointer.
-  @param[in]  SegIdx              ELF segment index.
-  @param[out] SegInfo             The pointer to the segment info.
-
-  @retval EFI_INVALID_PARAMETER   ElfCt or SecPos is NULL.
-  @retval EFI_NOT_FOUND           Could not find the section.
-  @retval EFI_SUCCESS             Section posistion was filled successfully.
-**/
-EFI_STATUS
-EFIAPI
-GetElfSegmentInfo (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SegIdx,
-  OUT SEGMENT_INFO         *SegInfo
-  );
-
-/**
-  Relocate all sections in a ELF image to current location.
-
-  @param[in]  ElfCt               ELF image context pointer.
-
-  @retval EFI_INVALID_PARAMETER   ElfCt is NULL.
-  @retval EFI_UNSUPPORTED         Relocation is not supported.
-  @retval EFI_SUCCESS             ELF image was relocated successfully.
-**/
-EFI_STATUS
-EFIAPI
-RelocateElfSections  (
-  IN    ELF_IMAGE_CONTEXT      *ElfCt
-  );
-
-/**
   Load the ELF segments to specified address in ELF header.
 
   This function loads ELF image segments into memory address specified
@@ -184,24 +90,49 @@ RelocateElfSections  (
 **/
 EFI_STATUS
 EFIAPI
-LoadElfSegments (
+LoadElfImage (
   IN  ELF_IMAGE_CONTEXT       *ElfCt
   );
 
 /**
-  Calculate a ELF image size.
+  Get a ELF section name from its index.
 
   @param[in]  ElfCt               ELF image context pointer.
+  @param[in]  SectionIndex        ELF section index.
+  @param[out] SectionName         The pointer to the section name.
 
-  @retval EFI_INVALID_PARAMETER   ElfCt or SecPos is NULL.
+  @retval EFI_INVALID_PARAMETER   ElfCt or SecName is NULL.
   @retval EFI_NOT_FOUND           Could not find the section.
-  @retval EFI_SUCCESS             Section posistion was filled successfully.
+  @retval EFI_SUCCESS             Section name was filled successfully.
 **/
 EFI_STATUS
 EFIAPI
-CalculateElfImageSize (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  OUT UINTN                *Size
+GetElfSectionName (
+  IN  ELF_IMAGE_CONTEXT     *ElfCt,
+  IN  UINT32                SectionIndex,
+  OUT CHAR8                 **SectionName
+  );
+
+/**
+  Get the offset and size of x-th ELF section.
+
+  @param[in]  ElfCt               ELF image context pointer.
+  @param[in]  Index               ELF section index.
+  @param[out] Offset              Return the offset of the specific section.
+  @param[out] Size                Return the size of the specific section.
+
+  @retval EFI_INVALID_PARAMETER   ImageBase, Offset or Size is NULL.
+  @retval EFI_INVALID_PARAMETER   EiClass doesn't equal to ELFCLASS32 or ELFCLASS64.
+  @retval EFI_NOT_FOUND           Could not find the section.
+  @retval EFI_SUCCESS             Offset and Size are returned.
+**/
+EFI_STATUS
+EFIAPI
+GetElfSectionPos (
+  IN  ELF_IMAGE_CONTEXT     *ElfCt,
+  IN  UINT32                Index,
+  OUT UINTN                 *Offset,
+  OUT UINTN                 *Size
   );
 
 #endif /* __ELF_LIB_H__ */

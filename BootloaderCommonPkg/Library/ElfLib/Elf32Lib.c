@@ -17,7 +17,6 @@ IsTextShdr (
   return (BOOLEAN) ((Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == SHF_ALLOC);
 }
 
-
 STATIC
 BOOLEAN
 IsDataShdr (
@@ -27,135 +26,39 @@ IsDataShdr (
   return (BOOLEAN) (Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == (SHF_ALLOC | SHF_WRITE);
 }
 
-
 Elf32_Shdr *
-EFIAPI
 GetElf32SectionByIndex (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SecIdx
-)
+  IN  UINT8                 *ImageBase,
+  IN  UINT32                Index
+  )
 {
   Elf32_Ehdr        *Elf32Hdr;
 
-  Elf32Hdr  = (Elf32_Ehdr *)ElfCt->ImageBase;
-  if (SecIdx >= Elf32Hdr->e_shnum) {
+  Elf32Hdr  = (Elf32_Ehdr *)ImageBase;
+  if (Index >= Elf32Hdr->e_shnum) {
     return NULL;
   }
 
-  return (Elf32_Shdr *)(ElfCt->ImageBase + Elf32Hdr->e_shoff + SecIdx * Elf32Hdr->e_shentsize);
-}
-
-
-Elf32_Shdr *
-EFIAPI
-GetElf32SectionByName (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  CHAR8                *Name
-)
-{
-  EFI_STATUS    Status;
-  Elf32_Ehdr   *Elf32Hdr;
-  Elf32_Shdr   *Elf32Shdr;
-  CHAR8        *SecName;
-  UINT32        Idx;
-
-  Elf32Shdr = NULL;
-  Elf32Hdr  = (Elf32_Ehdr *)ElfCt->ImageBase;
-  for (Idx = 0; Idx < Elf32Hdr->e_shnum; Idx++) {
-    Status = GetElfSectionName (ElfCt, Idx, &SecName);
-    if (!EFI_ERROR(Status) && (AsciiStrCmp(Name, SecName) == 0)) {
-      Elf32Shdr = GetElf32SectionByIndex (ElfCt, Idx);
-      break;
-    }
-  }
-  return Elf32Shdr;
+  return (Elf32_Shdr *)(ImageBase + Elf32Hdr->e_shoff + Index * Elf32Hdr->e_shentsize);
 }
 
 Elf32_Phdr *
-EFIAPI
 GetElf32SegmentByIndex (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SegIdx
-)
+  IN  UINT8                 *ImageBase,
+  IN  UINT32                Index
+  )
 {
   Elf32_Ehdr        *Elf32Hdr;
 
-  Elf32Hdr  = (Elf32_Ehdr *)ElfCt->ImageBase;
-  if (SegIdx >= Elf32Hdr->e_phnum) {
+  Elf32Hdr  = (Elf32_Ehdr *)ImageBase;
+  if (Index >= Elf32Hdr->e_phnum) {
     return NULL;
   }
 
-  return (Elf32_Phdr *)(ElfCt->ImageBase + Elf32Hdr->e_phoff + SegIdx * Elf32Hdr->e_shentsize);
-}
-
-/**
-  Load ELF image which has 32-bit architecture
-
-  @param[in]  ElfCt               ELF image context pointer.
-
-  @retval EFI_SUCCESS         ELF binary is loaded successfully.
-  @retval Others              Loading ELF binary fails.
-
-**/
-EFI_STATUS
-LoadElf32Segments (
-  IN    ELF_IMAGE_CONTEXT    *ElfCt
-  )
-{
-  Elf32_Ehdr   *Elf32Hdr;
-  Elf32_Phdr   *ProgramHdr;
-  Elf32_Phdr   *ProgramHdrBase;
-  UINT16        Index;
-  UINT8        *ImageBase;
-  UINTN         Delta;
-
-  if (ElfCt == NULL) {
-    return EFI_INVALID_PARAMETER;
-  }
-
-  ImageBase = ElfCt->ImageBase;
-  if (ElfCt->NewBase != NULL) {
-    Delta = MAX_UINTN;
-  } else {
-    Delta = 0;
-  }
-
-  Elf32Hdr       = (Elf32_Ehdr *)ImageBase;
-  ProgramHdrBase = (Elf32_Phdr *)(ImageBase + Elf32Hdr->e_phoff);
-  for (Index = 0; Index < Elf32Hdr->e_phnum; Index++) {
-    ProgramHdr = (Elf32_Phdr *)((UINT8 *)ProgramHdrBase + Index * Elf32Hdr->e_phentsize);
-
-    if ((ProgramHdr->p_type != PT_LOAD) ||
-        (ProgramHdr->p_memsz == 0) ||
-        (ProgramHdr->p_offset == 0)) {
-      continue;
-    }
-
-    if (ProgramHdr->p_filesz > ProgramHdr->p_memsz) {
-      return EFI_LOAD_ERROR;
-    }
-
-    if (Delta == MAX_UINTN) {
-      Delta = (UINTN)ElfCt->NewBase - (ProgramHdr->p_paddr - (ProgramHdr->p_paddr & 0xFFF));
-    }
-    CopyMem ((VOID *)(UINTN)(ProgramHdr->p_paddr + Delta),
-        ImageBase + ProgramHdr->p_offset,
-        (UINTN)ProgramHdr->p_filesz);
-
-    if (ProgramHdr->p_memsz > ProgramHdr->p_filesz) {
-      ZeroMem ((VOID *)(UINTN)(ProgramHdr->p_paddr + Delta + ProgramHdr->p_filesz),
-        (UINTN)(ProgramHdr->p_memsz - ProgramHdr->p_filesz));
-    }
-  }
-
-  ElfCt->Delta = Delta;
-  ElfCt->Entry = Elf32Hdr->e_entry + Delta;
-
-  return EFI_SUCCESS;
+  return (Elf32_Phdr *)(ImageBase + Elf32Hdr->e_phoff + Index * Elf32Hdr->e_phentsize);
 }
 
 EFI_STATUS
-EFIAPI
 RelocateElf32Sections  (
   IN    ELF_IMAGE_CONTEXT      *ElfCt
   )
@@ -167,22 +70,22 @@ RelocateElf32Sections  (
   UINT8           *CurPtr;
   UINT32           Index;
   UINT32           RelIdx;
-  UINT32           Offset;
   UINT32          *Ptr32;
   UINT8            RelType;
+  UINTN            Delta;
 
-
-  Elf32Hdr  = (Elf32_Ehdr *)ElfCt->ImageBase;
+  Elf32Hdr  = (Elf32_Ehdr *)ElfCt->FileBase;
   if (Elf32Hdr->e_machine != EM_386) {
     return EFI_UNSUPPORTED;
   }
 
-  CurPtr  = ElfCt->ImageBase + Elf32Hdr->e_shoff;
+  Delta  = (UINTN) ElfCt->ImageAddress - (UINTN) ElfCt->PreferredImageAddress;
+  CurPtr = ElfCt->FileBase + Elf32Hdr->e_shoff;
   for (Index = 0; Index < Elf32Hdr->e_shnum; Index++) {
     Rel32Shdr = (Elf32_Shdr *)CurPtr;
     CurPtr  = CurPtr + Elf32Hdr->e_shentsize;
     if ((Rel32Shdr->sh_type == SHT_REL) || (Rel32Shdr->sh_type == SHT_RELA)) {
-      Sec32Shdr = GetElf32SectionByIndex (ElfCt, Rel32Shdr->sh_info);
+      Sec32Shdr = GetElf32SectionByIndex (ElfCt->FileBase, Rel32Shdr->sh_info);
       if (!IsTextShdr(Sec32Shdr) && !IsDataShdr(Sec32Shdr)) {
         continue;
       }
@@ -201,28 +104,76 @@ RelocateElf32Sections  (
             //
             // Creates a relative relocation entry from the absolute entry.
             //
-            if (ElfCt->Delta == 0) {
-              Offset  = Sec32Shdr->sh_offset + (Rel32Entry->r_offset - Sec32Shdr->sh_addr);
-              Ptr32   = (UINT32 *)(ElfCt->ImageBase + Offset);
-              *Ptr32 += Sec32Shdr->sh_offset + (UINT32)(UINTN)ElfCt->ImageBase - Sec32Shdr->sh_addr;
-            } else {
-              Ptr32   = (UINT32 *)(Rel32Entry->r_offset + ElfCt->Delta);
-              *Ptr32 += (UINT32)ElfCt->Delta;
-            }
+            Ptr32 = (UINT32 *) (UINTN) (Rel32Entry->r_offset + Delta);
+            *Ptr32 += (UINT32) Delta;
             break;
           default:
             DEBUG ((DEBUG_INFO, "Unsupported relocation type %02X\n", RelType));
         }
       }
-
-      if ((Elf32Hdr->e_entry >= Sec32Shdr->sh_addr) && (Elf32Hdr->e_entry < Sec32Shdr->sh_addr + Sec32Shdr->sh_size)) {
-        if (ElfCt->NewBase == NULL) {
-          ElfCt->Entry = (UINTN)(Elf32Hdr->e_entry - Sec32Shdr->sh_addr + (UINT32)(UINTN)ElfCt->ImageBase + Sec32Shdr->sh_offset);
-        } else {
-          ElfCt->Entry = (UINTN)(Elf32Hdr->e_entry + ElfCt->Delta);
-        }
-      }
     }
+  }
+  ElfCt->EntryPoint = (UINTN)(Elf32Hdr->e_entry + Delta);
+
+  return EFI_SUCCESS;
+}
+
+/**
+  Load ELF image which has 32-bit architecture.
+
+  Caller should set Context.ImageAddress to a proper value, either pointing to
+  a new allocated memory whose size equal to Context.ImageSize, or pointing
+  to Context.PreferredImageAddress.
+
+  @param[in]  ElfCt               ELF image context pointer.
+
+  @retval EFI_SUCCESS         ELF binary is loaded successfully.
+  @retval Others              Loading ELF binary fails.
+
+**/
+EFI_STATUS
+LoadElf32Image (
+  IN    ELF_IMAGE_CONTEXT    *ElfCt
+  )
+{
+  Elf32_Ehdr    *Elf32Hdr;
+  Elf32_Phdr    *ProgramHdr;
+  Elf32_Phdr    *ProgramHdrBase;
+  UINT16        Index;
+  UINTN         Delta;
+
+  ASSERT (ElfCt != NULL);
+
+  //
+  // Per the sprit of ELF, loading to memory only consumes info from program headers.
+  //
+  Elf32Hdr       = (Elf32_Ehdr *)ElfCt->FileBase;
+  ProgramHdrBase = (Elf32_Phdr *)(ElfCt->FileBase + Elf32Hdr->e_phoff);
+  for (Index = 0; Index < Elf32Hdr->e_phnum; Index++) {
+    ProgramHdr = (Elf32_Phdr *)((UINT8 *)ProgramHdrBase + Index * Elf32Hdr->e_phentsize);
+
+    //
+    // Skip segments that don't require load (type tells, or size is 0)
+    //
+    if ((ProgramHdr->p_type != PT_LOAD) ||
+        (ProgramHdr->p_memsz == 0)) {
+      continue;
+    }
+
+    //
+    // The memory offset of segment relative to the image base
+    // Note: CopyMem() does nothing when the dst equals to src.
+    //
+    Delta = ProgramHdr->p_paddr - (UINT32) (UINTN) ElfCt->PreferredImageAddress;
+    CopyMem (ElfCt->ImageAddress + Delta, ElfCt->FileBase + ProgramHdr->p_offset, ProgramHdr->p_filesz);
+    ZeroMem (ElfCt->ImageAddress + Delta + ProgramHdr->p_filesz, ProgramHdr->p_memsz - ProgramHdr->p_filesz);
+  }
+
+  //
+  // Relocate when new new image base is not the preferred image base.
+  //
+  if (ElfCt->ImageAddress != ElfCt->PreferredImageAddress) {
+    RelocateElf32Sections (ElfCt);
   }
 
   return EFI_SUCCESS;

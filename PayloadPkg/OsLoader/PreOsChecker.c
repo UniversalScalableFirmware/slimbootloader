@@ -8,6 +8,7 @@
 #include <Library/DebugLib.h>
 #include <Library/ContainerLib.h>
 #include <Library/ElfLib.h>
+#include <Library/UniversalPayloadLib.h>
 #include <Library/LinuxLib.h>
 #include <Library/MultibootLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -75,9 +76,10 @@ LoadPreOsChecker (
   IN  VOID
   )
 {
-  EFI_STATUS         Status;
-  UINT32             Length;
-  VOID              *Buffer;
+  EFI_STATUS             Status;
+  UINT32                 Length;
+  VOID                  *Buffer;
+  LOADED_PAYLOAD_INFO    PayloadInfo;
 
   //
   // TBD: Set to NULL to re-load PreOsChecker in case of restarting Payload for now.
@@ -99,8 +101,10 @@ LoadPreOsChecker (
     return EFI_NOT_FOUND;
   }
 
-  Status = LoadElfImage (Buffer, &mPreOsCheckerEntry);
+  ZeroMem (&PayloadInfo, sizeof(PayloadInfo));
+  Status = LoadElfPayload (Buffer, &PayloadInfo);
   if (!EFI_ERROR (Status)) {
+    mPreOsCheckerEntry = (VOID *)PayloadInfo.EntryPoint;
     DEBUG ((DEBUG_INFO, "Pre-OS checker entry @ 0x%p\n", mPreOsCheckerEntry));
   }
 

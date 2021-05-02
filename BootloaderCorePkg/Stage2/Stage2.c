@@ -185,27 +185,28 @@ NormalBootPath (
     DEBUG ((DEBUG_INFO, "FV Format Payload\n"));
     UefiSig = Dst[0];
     Status  = LoadFvImage (Dst, Stage2Param->PayloadActualLength, (VOID **)&PldEntry, &PldMachine);
-  } else if (IsElfImage (Dst)) {
+  } else if (IsElfFormat ((CONST UINT8 *)Dst)) {
     DEBUG ((DEBUG_INFO, "ELF Format Payload\n"));
     // Assume Universal Payload first
-    Status = LoadUniversalPayload (Dst, &PayloadInfo);
+    ZeroMem (&PayloadInfo, sizeof(PayloadInfo));
+    Status = LoadElfPayload (Dst, &PayloadInfo);
     if (Status == EFI_SUCCESS) {
-      DEBUG ((DEBUG_INFO, "Univeral Payload %a v%08X\n", PayloadInfo.Info.ImageId, PayloadInfo.Info.Revision));
+      if (PayloadInfo.Info.Identifier == PLD_IDENTIFIER) {
+        DEBUG ((DEBUG_INFO, "Univeral Payload %a v%08X\n", PayloadInfo.Info.ImageId, PayloadInfo.Info.Revision));
+        HobSize    = sizeof (LOADED_PAYLOAD_IMAGE_INFO) + sizeof(PAYLOAD_IMAGE_ENTRY) * (PayloadInfo.ImageCount + 1);
+        PldImgInfo = (LOADED_PAYLOAD_IMAGE_INFO *)BuildGuidHob (&gLoadedPayloadImageInfoGuid, HobSize);
+        if (PldImgInfo != NULL) {
+          ZeroMem (PldImgInfo, HobSize);
+          PldImgInfo->Revision = 1;
+          PldImgInfo->EntryNum = PayloadInfo.ImageCount + 1;
+          AsciiStrCpyS (PldImgInfo->Entry[0].Name, sizeof(PldImgInfo->Entry[0].Name), "image");
+          PldImgInfo->Entry[0].Base = PayloadInfo.PayloadBase;
+          PldImgInfo->Entry[0].Size = PayloadInfo.PayloadSize;
+          CopyMem (&PldImgInfo->Entry[1], &PayloadInfo.LoadedImage, PayloadInfo.ImageCount * sizeof(PAYLOAD_IMAGE_ENTRY));
+        }
+      }
       PldMachine = (UINT16)PayloadInfo.Machine;
       PldEntry   = (PAYLOAD_ENTRY)PayloadInfo.EntryPoint;
-      HobSize    = sizeof (LOADED_PAYLOAD_IMAGE_INFO) + sizeof(PAYLOAD_IMAGE_ENTRY) * (PayloadInfo.ImageCount + 1);
-      PldImgInfo = (LOADED_PAYLOAD_IMAGE_INFO *)BuildGuidHob (&gLoadedPayloadImageInfoGuid, HobSize);
-      if (PldImgInfo != NULL) {
-        ZeroMem (PldImgInfo, HobSize);
-        PldImgInfo->Revision = 1;
-        PldImgInfo->EntryNum = PayloadInfo.ImageCount + 1;
-        PldImgInfo->Entry[0].Base = PayloadInfo.PayloadBase;
-        PldImgInfo->Entry[0].Size = PayloadInfo.PayloadSize;
-        CopyMem (&PldImgInfo->Entry[1], &PayloadInfo.LoadedImage, PayloadInfo.ImageCount * sizeof(PAYLOAD_IMAGE_ENTRY));
-      }
-    } else if (Status == EFI_NOT_FOUND) {
-      // Fall back to normal ELF image
-      Status = LoadElfImage (Dst, (VOID *)&PldEntry);
     }
   } else {
     if (FeaturePcdGet (PcdLinuxPayloadEnabled)) {

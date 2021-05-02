@@ -13,52 +13,34 @@
 #include <Library/DebugLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/ElfLib.h>
-#include <ElfCommon.h>
-#include <Elf32.h>
-#include <Elf64.h>
+#include "ElfCommon.h"
+#include "Elf32.h"
+#include "Elf64.h"
 
 
 Elf32_Shdr *
-EFIAPI
 GetElf32SectionByIndex (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SecIdx
-);
+  IN  UINT8                 *ImageBase,
+  IN  UINT32                Index
+  );
 
 Elf64_Shdr *
-EFIAPI
 GetElf64SectionByIndex (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SecIdx
-);
-
-Elf32_Shdr *
-EFIAPI
-GetElf32SectionByName (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  CHAR8                *Name
-);
-
-Elf64_Shdr *
-EFIAPI
-GetElf64SectionByName (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  CHAR8                *Name
-);
+  IN  UINT8                 *ImageBase,
+  IN  UINT32                Index
+  );
 
 Elf32_Phdr *
-EFIAPI
 GetElf32SegmentByIndex (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SegIdx
-);
+  IN  UINT8                 *ImageBase,
+  IN  UINT32                Index
+  );
 
 Elf64_Phdr *
-EFIAPI
 GetElf64SegmentByIndex (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SegIdx
-);
+  IN  UINT8                 *ImageBase,
+  IN  UINT32                Index
+  );
 
 /**
   Load ELF image which has 32-bit architecture
@@ -70,7 +52,7 @@ GetElf64SegmentByIndex (
 
 **/
 EFI_STATUS
-LoadElf32Segments (
+LoadElf32Image (
   IN    ELF_IMAGE_CONTEXT    *ElfCt
   );
 
@@ -85,20 +67,18 @@ LoadElf32Segments (
 
 **/
 EFI_STATUS
-LoadElf64Segments (
+LoadElf64Image (
   IN    ELF_IMAGE_CONTEXT    *ElfCt
   );
 
 
 EFI_STATUS
-EFIAPI
 RelocateElf32Sections  (
   IN    ELF_IMAGE_CONTEXT      *ElfCt
   );
 
 
 EFI_STATUS
-EFIAPI
 RelocateElf64Sections  (
   IN    ELF_IMAGE_CONTEXT      *ElfCt
   );

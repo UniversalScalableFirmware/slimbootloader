@@ -9,36 +9,15 @@
 #include "ElfLibInternal.h"
 
 /**
-  Check if the image has ELF Header
+  Check if the ELF image is valid.
 
   @param[in]  ImageBase       Memory address of an image.
 
-  @retval     TRUE if found ELF Header, otherwise FALSE
+  @retval     TRUE if valid.
 
 **/
-STATIC
 BOOLEAN
-IsElfHeader (
-  IN  CONST UINT8             *ImageBase
-  )
-{
-  return ((ImageBase != NULL) &&
-          (ImageBase[EI_MAG0] == ELFMAG0) &&
-          (ImageBase[EI_MAG1] == ELFMAG1) &&
-          (ImageBase[EI_MAG2] == ELFMAG2) &&
-          (ImageBase[EI_MAG3] == ELFMAG3));
-}
-
-/**
-  Check if the image is 32-bit ELF Format
-
-  @param[in]  ImageBase       Memory address of an image.
-
-  @retval     TRUE if ELF32, otherwise FALSE
-
-**/
-STATIC
-BOOLEAN
+EFIAPI
 IsElfFormat (
   IN  CONST UINT8             *ImageBase
   )
@@ -46,11 +25,20 @@ IsElfFormat (
   Elf32_Ehdr                  *Elf32Hdr;
   Elf64_Ehdr                  *Elf64Hdr;
 
-  if (ImageBase == NULL) {
-    return FALSE;
-  }
+  ASSERT (ImageBase != NULL);
 
   Elf32Hdr = (Elf32_Ehdr *)ImageBase;
+
+  //
+  // Start with correct signature "\7fELF"
+  //
+  if ((Elf32Hdr->e_ident[EI_MAG0] != ELFMAG0) ||
+      (Elf32Hdr->e_ident[EI_MAG1] != ELFMAG1) ||
+      (Elf32Hdr->e_ident[EI_MAG1] != ELFMAG1) ||
+      (Elf32Hdr->e_ident[EI_MAG2] != ELFMAG2)
+     ) {
+    return FALSE;
+  }
 
   //
   // Support little-endian only
@@ -117,29 +105,113 @@ IsElfFormat (
   return TRUE;
 }
 
-
 /**
-  Check if the image is a bootable ELF image.
+  Calculate a ELF image size.
 
-  @param[in]  ImageBase      Memory address of an image
+  @param[in]  ElfCt               ELF image context pointer.
 
-  @retval     TRUE           Image is a bootable ELF image
-  @retval     FALSE          Not a bootable ELF image
+  @retval EFI_INVALID_PARAMETER   ElfCt or SecPos is NULL.
+  @retval EFI_NOT_FOUND           Could not find the section.
+  @retval EFI_SUCCESS             Section posistion was filled successfully.
 **/
-BOOLEAN
-EFIAPI
-IsElfImage (
-  IN  CONST VOID            *ImageBase
+EFI_STATUS
+CalculateElfFileSize (
+  IN  ELF_IMAGE_CONTEXT    *ElfCt,
+  OUT UINTN                *FileSize
   )
 {
-  return ((ImageBase != NULL) &&
-          (IsElfHeader (ImageBase)) &&
-          (IsElfFormat ((CONST UINT8 *)ImageBase)));
+  EFI_STATUS     Status;
+  UINTN          FileSize1;
+  UINTN          FileSize2;
+  Elf32_Ehdr     *Elf32Hdr;
+  Elf64_Ehdr     *Elf64Hdr;
+  UINTN          Offset;
+  UINTN          Size;
+
+  if ((ElfCt == NULL) || (FileSize == NULL)) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  // Use last section as end of file
+  Status = GetElfSectionPos (ElfCt, ElfCt->ShNum - 1, &Offset, &Size);
+  if (EFI_ERROR(Status)) {
+    return EFI_UNSUPPORTED;
+  }
+  FileSize1 = Offset + Size;
+
+  // Use end of section header as end of file
+  FileSize2 = 0;
+  if (ElfCt->EiClass == ELFCLASS32) {
+    Elf32Hdr   = (Elf32_Ehdr *)ElfCt->FileBase;
+    FileSize2 = Elf32Hdr->e_shoff + Elf32Hdr->e_shentsize * Elf32Hdr->e_shnum;
+  } else if (ElfCt->EiClass == ELFCLASS64) {
+    Elf64Hdr   = (Elf64_Ehdr *)ElfCt->FileBase;
+    FileSize2 = (UINTN)(Elf64Hdr->e_shoff + Elf64Hdr->e_shentsize * Elf64Hdr->e_shnum);
+  }
+
+  *FileSize = MAX(FileSize1, FileSize2);
+
+  return EFI_SUCCESS;
 }
 
+/**
+  Get a ELF program segment loading info.
+
+  @param[in]  ImageBase           Image base.
+  @param[in]  EiClass             ELF class.
+  @param[in]  Index               ELF segment index.
+  @param[out] SegInfo             The pointer to the segment info.
+
+  @retval EFI_INVALID_PARAMETER   ElfCt or SecPos is NULL.
+  @retval EFI_NOT_FOUND           Could not find the section.
+  @retval EFI_SUCCESS             Section posistion was filled successfully.
+**/
+EFI_STATUS
+GetElfSegmentInfo (
+  IN  UINT8                 *ImageBase,
+  IN  UINT32                EiClass,
+  IN  UINT32                Index,
+  OUT SEGMENT_INFO          *SegInfo
+  )
+{
+  Elf32_Phdr       *Elf32Phdr;
+  Elf64_Phdr       *Elf64Phdr;
+
+  if ((ImageBase == NULL) || (SegInfo == NULL)) {
+    return EFI_INVALID_PARAMETER;
+  }
+
+  if (EiClass == ELFCLASS32) {
+    Elf32Phdr = GetElf32SegmentByIndex (ImageBase, Index);
+    if (Elf32Phdr != NULL) {
+      SegInfo->PtType  = Elf32Phdr->p_type;
+      SegInfo->Offset  = Elf32Phdr->p_offset;
+      SegInfo->Length  = Elf32Phdr->p_filesz;
+      SegInfo->MemLen  = Elf32Phdr->p_memsz;
+      SegInfo->MemAddr = Elf32Phdr->p_paddr;
+      SegInfo->Alignment = Elf32Phdr->p_align;
+      return EFI_SUCCESS;
+    }
+  } else if (EiClass == ELFCLASS64) {
+    Elf64Phdr = GetElf64SegmentByIndex (ImageBase, Index);
+    if (Elf64Phdr != NULL) {
+      SegInfo->PtType  = Elf64Phdr->p_type;
+      SegInfo->Offset  = (UINTN)Elf64Phdr->p_offset;
+      SegInfo->Length  = (UINTN)Elf64Phdr->p_filesz;
+      SegInfo->MemLen  = (UINTN)Elf64Phdr->p_memsz;
+      SegInfo->MemAddr = (UINTN)Elf64Phdr->p_paddr;
+      SegInfo->Alignment = (UINTN)Elf64Phdr->p_align;
+      return EFI_SUCCESS;
+    }
+  }
+
+  return EFI_NOT_FOUND;
+}
 
 /**
   Parse the ELF image info.
+
+  On return, all fields in ElfCt are updated except ImageAddress.
 
   @param[in]  ImageBase      Memory address of an image.
   @param[out] ElfCt          The EFL image context pointer.
@@ -156,57 +228,110 @@ ParseElfImage (
   OUT ELF_IMAGE_CONTEXT    *ElfCt
 )
 {
-  Elf32_Ehdr  *Elf32Hdr;
-  Elf64_Ehdr  *Elf64Hdr;
-  Elf32_Shdr  *Elf32Shdr;
-  Elf64_Shdr  *Elf64Shdr;
+  Elf32_Ehdr     *Elf32Hdr;
+  Elf64_Ehdr     *Elf64Hdr;
+  Elf32_Shdr     *Elf32Shdr;
+  Elf64_Shdr     *Elf64Shdr;
+  EFI_STATUS     Status;
+  UINT32         Index;
+  SEGMENT_INFO   SegInfo;
+  UINTN          End;
+  UINTN          Base;
+  UINTN          FileOffset;
 
-  if ((ElfCt == NULL) || (ImageBase == NULL)) {
+  if (ElfCt == NULL) {
     return EFI_INVALID_PARAMETER;
   }
-
   ZeroMem (ElfCt, sizeof(ELF_IMAGE_CONTEXT));
-  ElfCt->ImageBase = (UINT8 *)ImageBase;
-  if (!IsElfImage (ElfCt->ImageBase)) {
-    return EFI_UNSUPPORTED;
+
+  if (ImageBase == NULL) {
+    return (ElfCt->ParseStatus = EFI_INVALID_PARAMETER);
   }
 
-  Elf32Hdr = (Elf32_Ehdr *)ElfCt->ImageBase;
+  ElfCt->FileBase = (UINT8 *)ImageBase;
+  if (!IsElfFormat (ElfCt->FileBase)) {
+    return (ElfCt->ParseStatus = EFI_UNSUPPORTED);
+  }
+
+  Elf32Hdr = (Elf32_Ehdr *)ElfCt->FileBase;
   ElfCt->EiClass = Elf32Hdr->e_ident[EI_CLASS];
   if (ElfCt->EiClass == ELFCLASS32) {
-    Elf32Shdr = (Elf32_Shdr *)GetElf32SectionByIndex (ElfCt, Elf32Hdr->e_shstrndx);
+    Elf32Shdr = (Elf32_Shdr *)GetElf32SectionByIndex (ElfCt->FileBase, Elf32Hdr->e_shstrndx);
     if (Elf32Shdr == NULL) {
-      return EFI_UNSUPPORTED;
+      return (ElfCt->ParseStatus = EFI_UNSUPPORTED);
     }
-    ElfCt->Entry     = (UINTN)(ElfCt->ImageBase + Elf32Hdr->e_entry);
-    ElfCt->ShNum     = Elf32Hdr->e_shnum;
-    ElfCt->PhNum     = Elf32Hdr->e_phnum;
-    ElfCt->ShStrLen  = Elf32Shdr->sh_size;
-    ElfCt->ShStrOff  = Elf32Shdr->sh_offset;
+    ElfCt->EntryPoint = Elf32Hdr->e_entry;
+    ElfCt->ShNum      = Elf32Hdr->e_shnum;
+    ElfCt->PhNum      = Elf32Hdr->e_phnum;
+    ElfCt->ShStrLen   = Elf32Shdr->sh_size;
+    ElfCt->ShStrOff   = Elf32Shdr->sh_offset;
   } else {
     Elf64Hdr  = (Elf64_Ehdr *)Elf32Hdr;
-    Elf64Shdr = (Elf64_Shdr *)GetElf64SectionByIndex (ElfCt, Elf64Hdr->e_shstrndx);
+    Elf64Shdr = (Elf64_Shdr *)GetElf64SectionByIndex (ElfCt->FileBase, Elf64Hdr->e_shstrndx);
     if (Elf64Shdr == NULL) {
-      return EFI_UNSUPPORTED;
+      return (ElfCt->ParseStatus = EFI_UNSUPPORTED);
     }
-    ElfCt->Entry     = (UINTN)(ElfCt->ImageBase + Elf64Hdr->e_entry);
-    ElfCt->ShNum     = Elf64Hdr->e_shnum;
-    ElfCt->PhNum     = Elf64Hdr->e_phnum;
-    ElfCt->ShStrLen  = (UINT32)Elf64Shdr->sh_size;
-    ElfCt->ShStrOff  = (UINT32)Elf64Shdr->sh_offset;
+    ElfCt->EntryPoint = Elf64Hdr->e_entry;
+    ElfCt->ShNum      = Elf64Hdr->e_shnum;
+    ElfCt->PhNum      = Elf64Hdr->e_phnum;
+    ElfCt->ShStrLen   = (UINT32)Elf64Shdr->sh_size;
+    ElfCt->ShStrOff   = (UINT32)Elf64Shdr->sh_offset;
   }
 
-  return EFI_SUCCESS;
+  //
+  // Get the preferred image base and required memory size when loaded to new location.
+  //
+  End  = 0;
+  Base = MAX_UINT32;
+  FileOffset = 0;
+  ElfCt->ReloadRequired = FALSE;
+  for (Index = 0; Index < ElfCt->PhNum; Index++) {
+    Status = GetElfSegmentInfo (ElfCt->FileBase, ElfCt->EiClass, Index, &SegInfo);
+    ASSERT_EFI_ERROR (Status);
+
+    if (SegInfo.PtType != PT_LOAD) {
+      continue;
+    }
+
+    if (SegInfo.MemLen != SegInfo.Length) {
+      //
+      // Not enough space to execute at current location.
+      //
+      ElfCt->ReloadRequired = TRUE;
+    }
+
+    if (Base > (SegInfo.MemAddr & ~(SegInfo.Alignment - 1))) {
+      Base = SegInfo.MemAddr & ~(SegInfo.Alignment - 1);
+      FileOffset = SegInfo.Offset;
+    }
+    if (End < ALIGN_VALUE (SegInfo.MemAddr + SegInfo.MemLen, SegInfo.Alignment) - 1) {
+      End = ALIGN_VALUE (SegInfo.MemAddr + SegInfo.MemLen, SegInfo.Alignment) - 1;
+    }
+  }
+  //
+  // 0 - MAX_UINT32  + 1 equals to 0.
+  //
+  ElfCt->ImageSize             = End - Base + 1;
+  ElfCt->PreferredImageAddress = (VOID *) Base;
+  if (ElfCt->ReloadRequired) {
+    ElfCt->ImageAddress = NULL;
+  } else {
+    ElfCt->ImageAddress = ElfCt->FileBase + FileOffset;
+  }
+
+  CalculateElfFileSize (ElfCt, &ElfCt->FileSize);
+  return (ElfCt->ParseStatus = EFI_SUCCESS);;
 }
 
 /**
-  Load the ELF image to specified address in ELF header.
+  Load the ELF image to Context.ImageAddress.
 
-  This function loads ELF image segments into memory address specified
-  in ELF program header.
+  Context should be initialized by ParseElfImage().
+  Caller should set Context.ImageAddress to a proper value, either pointing to
+  a new allocated memory whose size equal to Context.ImageSize, or pointing
+  to Context.PreferredImageAddress.
 
-  @param[in]  ImageBase           Memory address of an image.
-  @param[out] EntryPoint          The entry point of loaded ELF image.
+  @param[in]  ElfCt               ELF image context pointer.
 
   @retval EFI_INVALID_PARAMETER   Input parameters are not valid.
   @retval EFI_UNSUPPORTED         Unsupported binary type.
@@ -216,45 +341,6 @@ ParseElfImage (
 EFI_STATUS
 EFIAPI
 LoadElfImage (
-  IN        VOID                  *ElfBuffer,
-  OUT       VOID                 **EntryPoint
-  )
-{
-  EFI_STATUS    Status;
-  ELF_IMAGE_CONTEXT   ElfCt;
-
-  if (ElfBuffer == NULL || EntryPoint == NULL) {
-    return EFI_INVALID_PARAMETER;
-  }
-
-  Status = ParseElfImage (ElfBuffer, &ElfCt);
-  if (EFI_ERROR (Status)) {
-    return EFI_UNSUPPORTED;
-  }
-
-  Status = LoadElfSegments (&ElfCt);
-  if (!EFI_ERROR(Status)) {
-    *EntryPoint = (VOID *)ElfCt.Entry;
-  }
-  return Status;
-}
-
-/**
-  Load the ELF segments to specified address in ELF header.
-
-  This function loads ELF image segments into memory address specified
-  in ELF program header.
-
-  @param[in]  ElfCt               ELF image context pointer.
-
-  @retval EFI_INVALID_PARAMETER   Input parameters are not valid.
-  @retval EFI_UNSUPPORTED         Unsupported binary type.
-  @retval EFI_LOAD_ERROR          ELF binary loading error.
-  @retval EFI_SUCCESS             ELF binary is loaded successfully.
-**/
-EFI_STATUS
-EFIAPI
-LoadElfSegments (
   IN  ELF_IMAGE_CONTEXT       *ElfCt
   )
 {
@@ -264,11 +350,19 @@ LoadElfSegments (
     return EFI_INVALID_PARAMETER;
   }
 
+  if (EFI_ERROR (ElfCt->ParseStatus)) {
+    return ElfCt->ParseStatus;
+  }
+
+  if (ElfCt->ImageAddress == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
+
   Status = EFI_UNSUPPORTED;
   if (ElfCt->EiClass == ELFCLASS32) {
-    Status = LoadElf32Segments (ElfCt);
+    Status = LoadElf32Image (ElfCt);
   } else if (ElfCt->EiClass == ELFCLASS64) {
-    Status = LoadElf64Segments (ElfCt);
+    Status = LoadElf64Image (ElfCt);
   }
 
   return Status;
@@ -279,8 +373,8 @@ LoadElfSegments (
   Get a ELF section name from its index.
 
   @param[in]  ElfCt               ELF image context pointer.
-  @param[in]  SecIdx              ELF section index.
-  @param[out] SecName             The pointer to the section name.
+  @param[in]  SectionIndex        ELF section index.
+  @param[out] SectionName         The pointer to the section name.
 
   @retval EFI_INVALID_PARAMETER   ElfCt or SecName is NULL.
   @retval EFI_NOT_FOUND           Could not find the section.
@@ -289,29 +383,33 @@ LoadElfSegments (
 EFI_STATUS
 EFIAPI
 GetElfSectionName (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SecIdx,
-  OUT CHAR8               **SecName
+  IN  ELF_IMAGE_CONTEXT     *ElfCt,
+  IN  UINT32                SectionIndex,
+  OUT CHAR8                 **SectionName
   )
 {
   Elf32_Shdr      *Elf32Shdr;
   Elf64_Shdr      *Elf64Shdr;
   CHAR8           *Name;
 
-  if ((ElfCt == NULL) || (SecName == NULL)) {
+  if ((ElfCt == NULL) || (SectionName == NULL)) {
     return EFI_INVALID_PARAMETER;
+  }
+
+  if (EFI_ERROR (ElfCt->ParseStatus)) {
+    return ElfCt->ParseStatus;
   }
 
   Name = NULL;
   if (ElfCt->EiClass == ELFCLASS32) {
-    Elf32Shdr = GetElf32SectionByIndex (ElfCt, SecIdx);
+    Elf32Shdr = GetElf32SectionByIndex (ElfCt->FileBase, SectionIndex);
     if ((Elf32Shdr != NULL) && (Elf32Shdr->sh_name < ElfCt->ShStrLen)) {
-      Name = (CHAR8 *)(ElfCt->ImageBase + ElfCt->ShStrOff + Elf32Shdr->sh_name);
+      Name = (CHAR8 *)(ElfCt->FileBase + ElfCt->ShStrOff + Elf32Shdr->sh_name);
     }
   } else if (ElfCt->EiClass == ELFCLASS64) {
-    Elf64Shdr = GetElf64SectionByIndex (ElfCt, SecIdx);
+    Elf64Shdr = GetElf64SectionByIndex (ElfCt->FileBase, SectionIndex);
     if ((Elf64Shdr != NULL) && (Elf64Shdr->sh_name < ElfCt->ShStrLen)) {
-      Name = (CHAR8 *)(ElfCt->ImageBase + ElfCt->ShStrOff + Elf64Shdr->sh_name);
+      Name = (CHAR8 *)(ElfCt->FileBase + ElfCt->ShStrOff + Elf64Shdr->sh_name);
     }
   }
 
@@ -319,60 +417,61 @@ GetElfSectionName (
     return EFI_NOT_FOUND;
   }
 
-  *SecName = Name;
+  *SectionName = Name;
   return EFI_SUCCESS;
 }
 
 
 /**
-  Get a ELF section name from its index.
+  Get the offset and size of x-th ELF section.
 
   @param[in]  ElfCt               ELF image context pointer.
-  @param[in]  SecIdx              ELF section index.
-  @param[out] SecPos              The pointer to the section postion.
+  @param[in]  Index               ELF section index.
+  @param[out] Offset              Return the offset of the specific section.
+  @param[out] Size                Return the size of the specific section.
 
-  @retval EFI_INVALID_PARAMETER   ElfCt or SecPos is NULL.
+  @retval EFI_INVALID_PARAMETER   ImageBase, Offset or Size is NULL.
+  @retval EFI_INVALID_PARAMETER   EiClass doesn't equal to ELFCLASS32 or ELFCLASS64.
   @retval EFI_NOT_FOUND           Could not find the section.
-  @retval EFI_SUCCESS             Section posistion was filled successfully.
+  @retval EFI_SUCCESS             Offset and Size are returned.
 **/
 EFI_STATUS
 EFIAPI
 GetElfSectionPos (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SecIdx,
-  OUT SECTION_POS          *SecPos
+  IN  ELF_IMAGE_CONTEXT     *ElfCt,
+  IN  UINT32                Index,
+  OUT UINTN                 *Offset,
+  OUT UINTN                 *Size
   )
 {
   Elf32_Shdr      *Elf32Shdr;
   Elf64_Shdr      *Elf64Shdr;
-  BOOLEAN          Found;
 
-  if ((ElfCt == NULL) || (SecPos == NULL)) {
+  if ((ElfCt == NULL) || (Offset == NULL) || (Size == NULL)) {
     return EFI_INVALID_PARAMETER;
   }
 
-  Found = FALSE;
+  if (EFI_ERROR (ElfCt->ParseStatus)) {
+    return ElfCt->ParseStatus;
+  }
+
   if (ElfCt->EiClass == ELFCLASS32) {
-    Elf32Shdr = GetElf32SectionByIndex (ElfCt, SecIdx);
-    if ((Elf32Shdr != NULL) && (Elf32Shdr->sh_name < ElfCt->ShStrLen)) {
-      SecPos->Offset = (UINTN)Elf32Shdr->sh_offset;
-      SecPos->Length = (UINTN)Elf32Shdr->sh_size;
-      Found = TRUE;
+    Elf32Shdr = GetElf32SectionByIndex (ElfCt->FileBase, Index);
+    if (Elf32Shdr != NULL) {
+      *Offset = (UINTN)Elf32Shdr->sh_offset;
+      *Size   = (UINTN)Elf32Shdr->sh_size;
+      return EFI_SUCCESS;
     }
   } else if (ElfCt->EiClass == ELFCLASS64) {
-    Elf64Shdr = GetElf64SectionByIndex (ElfCt, SecIdx);
-    if ((Elf64Shdr != NULL) && (Elf64Shdr->sh_name < ElfCt->ShStrLen)) {
-      SecPos->Offset = (UINTN)Elf64Shdr->sh_offset;
-      SecPos->Length = (UINTN)Elf64Shdr->sh_size;
-      Found = TRUE;
+    Elf64Shdr = GetElf64SectionByIndex (ElfCt->FileBase, Index);
+    if (Elf64Shdr != NULL) {
+      *Offset = (UINTN)Elf64Shdr->sh_offset;
+      *Size   = (UINTN)Elf64Shdr->sh_size;
+      return EFI_SUCCESS;
     }
   }
 
-  if (!Found) {
-    return EFI_NOT_FOUND;
-  }
-
-  return EFI_SUCCESS;
+  return EFI_NOT_FOUND;
 }
 
 /**
@@ -385,16 +484,13 @@ GetElfSectionPos (
   @retval EFI_SUCCESS             ELF image was relocated successfully.
 **/
 EFI_STATUS
-EFIAPI
 RelocateElfSections (
   IN    ELF_IMAGE_CONTEXT      *ElfCt
   )
 {
   EFI_STATUS  Status;
 
-  if (ElfCt == NULL) {
-    return EFI_INVALID_PARAMETER;
-  }
+  ASSERT (ElfCt != NULL);
 
   Status = EFI_UNSUPPORTED;
   if (ElfCt->EiClass == ELFCLASS32) {
@@ -403,112 +499,4 @@ RelocateElfSections (
     Status = RelocateElf64Sections (ElfCt);
   }
   return Status;
-}
-
-
-/**
-  Get a ELF program segment loading info.
-
-  @param[in]  ElfCt               ELF image context pointer.
-  @param[in]  SegIdx              ELF segment index.
-  @param[out] SegInfo             The pointer to the segment info.
-
-  @retval EFI_INVALID_PARAMETER   ElfCt or SecPos is NULL.
-  @retval EFI_NOT_FOUND           Could not find the section.
-  @retval EFI_SUCCESS             Section posistion was filled successfully.
-**/
-EFI_STATUS
-EFIAPI
-GetElfSegmentInfo (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  IN  UINT32                SegIdx,
-  OUT SEGMENT_INFO         *SegInfo
-  )
-{
-  Elf32_Phdr      *Elf32Phdr;
-  Elf64_Phdr      *Elf64Phdr;
-  BOOLEAN          Found;
-
-  if ((ElfCt == NULL) || (SegInfo == NULL)) {
-    return EFI_INVALID_PARAMETER;
-  }
-
-  Found = FALSE;
-  if (ElfCt->EiClass == ELFCLASS32) {
-    Elf32Phdr = GetElf32SegmentByIndex (ElfCt, SegIdx);
-    if (Elf32Phdr != NULL) {
-      SegInfo->PtType  = Elf32Phdr->p_type;
-      SegInfo->Offset  = Elf32Phdr->p_offset;
-      SegInfo->Length  = Elf32Phdr->p_filesz;
-      SegInfo->MemLen  = Elf32Phdr->p_memsz;
-      SegInfo->MemAddr = Elf32Phdr->p_paddr;
-      Found = TRUE;
-    }
-  } else if (ElfCt->EiClass == ELFCLASS64) {
-    Elf64Phdr = GetElf64SegmentByIndex (ElfCt, SegIdx);
-    if (Elf64Phdr != NULL) {
-      SegInfo->PtType  = Elf64Phdr->p_type;
-      SegInfo->Offset  = (UINTN)Elf64Phdr->p_offset;
-      SegInfo->Length  = (UINTN)Elf64Phdr->p_filesz;
-      SegInfo->MemLen  = (UINTN)Elf64Phdr->p_memsz;
-      SegInfo->MemAddr = (UINTN)Elf64Phdr->p_paddr;
-      Found = TRUE;
-    }
-  }
-
-  if (!Found) {
-    return EFI_NOT_FOUND;
-  }
-
-  return EFI_SUCCESS;
-}
-
-
-/**
-  Calculate a ELF image size.
-
-  @param[in]  ElfCt               ELF image context pointer.
-
-  @retval EFI_INVALID_PARAMETER   ElfCt or SecPos is NULL.
-  @retval EFI_NOT_FOUND           Could not find the section.
-  @retval EFI_SUCCESS             Section posistion was filled successfully.
-**/
-EFI_STATUS
-EFIAPI
-CalculateElfImageSize (
-  IN  ELF_IMAGE_CONTEXT    *ElfCt,
-  OUT UINTN                *Size
-  )
-{
-  EFI_STATUS     Status;
-  UINTN          ImageSize1;
-  UINTN          ImageSize2;
-  SECTION_POS    SecPos;
-  Elf32_Ehdr    *Elf32Hdr;
-  Elf64_Ehdr    *Elf64Hdr;
-
-  if ((ElfCt == NULL) || (Size == NULL)) {
-    return EFI_INVALID_PARAMETER;
-  }
-
-  // Use last section as end of file
-  Status = GetElfSectionPos (ElfCt, ElfCt->ShNum - 1, &SecPos);
-  if (EFI_ERROR(Status)) {
-    return EFI_UNSUPPORTED;
-  }
-  ImageSize1 = SecPos.Offset + SecPos.Length;
-
-  // Use end of section header as end of file
-  ImageSize2 = 0;
-  if (ElfCt->EiClass == ELFCLASS32) {
-    Elf32Hdr   = (Elf32_Ehdr *)ElfCt->ImageBase;
-    ImageSize2 = Elf32Hdr->e_shoff + Elf32Hdr->e_shentsize * Elf32Hdr->e_shnum;
-  } else if (ElfCt->EiClass == ELFCLASS64) {
-    Elf64Hdr   = (Elf64_Ehdr *)ElfCt->ImageBase;
-    ImageSize2 = (UINTN)(Elf64Hdr->e_shoff + Elf64Hdr->e_shentsize * Elf64Hdr->e_shnum);
-  }
-
-  *Size = MAX(ImageSize1, ImageSize2);
-
-  return EFI_SUCCESS;
 }
