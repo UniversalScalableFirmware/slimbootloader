@@ -260,7 +260,7 @@ ParseElfImage (
     if (Elf32Shdr == NULL) {
       return (ElfCt->ParseStatus = EFI_UNSUPPORTED);
     }
-    ElfCt->EntryPoint = Elf32Hdr->e_entry;
+    ElfCt->EntryPoint = (UINTN)Elf32Hdr->e_entry;
     ElfCt->ShNum      = Elf32Hdr->e_shnum;
     ElfCt->PhNum      = Elf32Hdr->e_phnum;
     ElfCt->ShStrLen   = Elf32Shdr->sh_size;
@@ -271,7 +271,7 @@ ParseElfImage (
     if (Elf64Shdr == NULL) {
       return (ElfCt->ParseStatus = EFI_UNSUPPORTED);
     }
-    ElfCt->EntryPoint = Elf64Hdr->e_entry;
+    ElfCt->EntryPoint = (UINTN)Elf64Hdr->e_entry;
     ElfCt->ShNum      = Elf64Hdr->e_shnum;
     ElfCt->PhNum      = Elf64Hdr->e_phnum;
     ElfCt->ShStrLen   = (UINT32)Elf64Shdr->sh_size;
