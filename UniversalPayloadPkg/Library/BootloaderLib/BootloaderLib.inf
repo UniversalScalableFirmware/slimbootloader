@@ -24,7 +24,7 @@
 
 [Packages]
   MdePkg/MdePkg.dec
-  BootloaderCorePkg/BootloaderCorePkg.dec
+  UniversalPayloadPkg/UniversalPayloadPkg.dec
   BootloaderCommonPkg/BootloaderCommonPkg.dec
 
 [LibraryClasses]
@@ -33,3 +33,7 @@
   PcdLib
 
 [Guids]
+
+[Pcd]
+  gUniversalPayloadTokenSpaceGuid.PcdHobListPtr
+

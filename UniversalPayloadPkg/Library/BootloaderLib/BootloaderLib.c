@@ -6,9 +6,7 @@
 **/
 #include <PiPei.h>
 #include <Library/BaseLib.h>
-#include <Library/DebugLib.h>
-#include <Library/BaseMemoryLib.h>
-#include <Library/HobLib.h>
+#include <Library/PcdLib.h>
 
 
 /**
@@ -25,5 +23,5 @@ GetHobListPtr (
   VOID
   )
 {
-  return NULL;
+  return (VOID *)(UINTN) PcdGet64 (PcdHobListPtr);
 }
