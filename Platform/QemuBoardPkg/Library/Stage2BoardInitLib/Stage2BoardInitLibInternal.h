@@ -30,6 +30,7 @@
 #include <Guid/GraphicsInfoHob.h>
 #include <Guid/SystemTableInfoGuid.h>
 #include <Guid/SerialPortInfoGuid.h>
+#include <Guid/PldSerialPortInfoGuid.h>
 #include <Guid/SmmInformationGuid.h>
 #include <FspsUpd.h>
 #include <BlCommon.h>

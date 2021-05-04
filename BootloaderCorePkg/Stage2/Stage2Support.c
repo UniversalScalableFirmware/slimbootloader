@@ -488,6 +488,10 @@ BuildExtraInfoHob (
   VOID                             *DeviceTableHob;
   LDR_SMM_INFO                     *SmmInfoHob;
   SYS_CPU_TASK_HOB                 *SysCpuTaskHob;
+  PLD_SERIAL_PORT_INFO             *PldSerialPortInfo;
+  UINT32                           RegEax;
+  UINT8                            PhysicalAddressBits;
+  EFI_RESOURCE_ATTRIBUTE_TYPE      ResourceAttribute;
 
   LdrGlobal = (LOADER_GLOBAL_DATA *)GetLoaderGlobalDataPointer();
   S3Data    = (S3_DATA *)LdrGlobal->S3DataPtr;
@@ -516,7 +520,7 @@ BuildExtraInfoHob (
   SerialPortInfo = (SERIAL_PORT_INFO *)GetGuidHobData (NULL, NULL, &gLoaderSerialPortInfoGuid);
   if (SerialPortInfo != NULL) {
     PlatformUpdateHobInfo (&gLoaderSerialPortInfoGuid, SerialPortInfo);
-  }
+  }   
 
   // Build ACPI Hob
   SystemTableInfo = BuildGuidHob (&gLoaderSystemTableInfoGuid, sizeof (SYSTEM_TABLE_INFO));
@@ -652,7 +656,6 @@ BuildExtraInfoHob (
   }
 
   // Build serial port hob
-  PLD_SERIAL_PORT_INFO   *PldSerialPortInfo;
   PldSerialPortInfo = BuildGuidHob (&gPldSerialPortInfoGuid, sizeof (PLD_SERIAL_PORT_INFO));
   if (PldSerialPortInfo != NULL) {
     ZeroMem (PldSerialPortInfo, sizeof (PLD_SERIAL_PORT_INFO));
@@ -661,6 +664,7 @@ BuildExtraInfoHob (
     PldSerialPortInfo->RegisterBase  = 0x3F8;
     PldSerialPortInfo->BaudRate      = 115200;
     PldSerialPortInfo->RegisterWidth = 1;
+    PlatformUpdateHobInfo (&gPldSerialPortInfoGuid, PldSerialPortInfo);  
   }
 
   // SMM register HOB
@@ -697,14 +701,6 @@ BuildExtraInfoHob (
     ZeroMem (NvVariableHob,  sizeof (NV_VARIABLE_INFO));
     PlatformUpdateHobInfo (&gNvVariableInfoGuid, NvVariableHob);
   }
-
-
-  //
-  // Build CPU memory space and IO space hob
-  //
-  UINT32                           RegEax;
-  UINT8                            PhysicalAddressBits;
-  EFI_RESOURCE_ATTRIBUTE_TYPE      ResourceAttribute;
 
   //
   // Build CPU memory space and IO space hob

@@ -168,6 +168,7 @@ UpdatePayloadId (
       //   default           : enable OsLoader
       //   '-boot order=??a' : enable EFI payload
       //   '-boot order=??c' : enable LINUX payload
+      //   '-boot order=??d' : enable universal payload
       // Here ?? is the normal boot devices.
       IoWrite8 (0x70, 0x38);
       BootDev = IoRead8 (0x71) >> 4;
@@ -177,6 +178,8 @@ UpdatePayloadId (
       } else if (BootDev == 2) {
         // Boot LINUX payload
         SetPayloadId (LINX_PAYLOAD_ID_SIGNATURE);
+      } else if (BootDev == 3) {
+        SetPayloadId (UPLD_PAYLOAD_ID_SIGNATURE);
       } else {
         // Boot OsLoader
         SetPayloadId (0);
@@ -326,21 +329,6 @@ SaveNvsData (
   return EFI_UNSUPPORTED;
 }
 
-/**
-  Update serial port information to global HOB data structure.
-
-  @param SerialPortInfo  Pointer to global HOB data structure.
- **/
-VOID
-EFIAPI
-UpdateSerialPortInfo (
-  IN  SERIAL_PORT_INFO  *SerialPortInfo
-)
-{
-  SerialPortInfo->UseMmio       = FALSE;
-  SerialPortInfo->RegisterBase  = GetSerialPortBase();
-  SerialPortInfo->RegisterWidth = GetSerialPortStrideSize();
-}
 
 /**
  Update the OS boot option
@@ -456,6 +444,51 @@ UpdateSmmInfo (
 }
 
 /**
+  Update serial port information to global HOB data structure.
+
+  @param SerialPortInfo  Pointer to global HOB data structure.
+ **/
+VOID
+EFIAPI
+UpdateSerialPortInfo (
+  IN  SERIAL_PORT_INFO  *SerialPortInfo
+)
+{
+  SerialPortInfo->BaseAddr = GetSerialPortBase();
+  SerialPortInfo->RegWidth = GetSerialPortStrideSize();
+  if (SerialPortInfo->BaseAddr < 0x1000) {
+    // IO Type
+    SerialPortInfo->Type = 1;
+  } else {
+    // MMIO Type
+    SerialPortInfo->Type = 2;
+  }
+}
+
+/**
+  Update Serial Interface Information for Payload
+
+  @param[in]  SerialPortInfo    Serial Interface Information to be updated for Payload
+
+**/
+VOID
+EFIAPI
+UpdatePldSerialPortInfo (
+  IN  PLD_SERIAL_PORT_INFO  *SerialPortInfo
+)
+{
+  SerialPortInfo->RegisterBase  = GetSerialPortBase();
+  SerialPortInfo->RegisterWidth = GetSerialPortStrideSize();
+  if (SerialPortInfo->RegisterBase < 0x1000) {
+    // IO Type
+    SerialPortInfo->UseMmio = FALSE;
+  } else {
+    // MMIO Type
+    SerialPortInfo->UseMmio = TRUE;
+  }
+}
+
+/**
  Update Hob Info with platform specific data
 
  @param  Guid          The GUID to tag the customized HOB.
@@ -482,6 +515,8 @@ PlatformUpdateHobInfo (
     UpdateOsBootMediumInfo (HobInfo);
   } else if (Guid == &gSmmInformationGuid) {
     UpdateSmmInfo (HobInfo);
+  } else if (Guid == &gPldSerialPortInfoGuid) {
+    UpdatePldSerialPortInfo (HobInfo);
   }
 }
 

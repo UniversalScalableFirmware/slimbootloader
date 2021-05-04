@@ -99,6 +99,7 @@
   gSpiFlashInfoGuid
   gNvVariableInfoGuid
   gPldSerialPortInfoGuid
+  gLoadedPayloadImageInfoGuid
 
 [Pcd]
   gPlatformCommonLibTokenSpaceGuid.PcdMaxLibraryDataEntry
