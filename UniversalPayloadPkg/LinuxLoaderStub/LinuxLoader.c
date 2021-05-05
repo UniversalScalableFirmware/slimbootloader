@@ -326,7 +326,7 @@ UpldUpdateLinuxBootParams (
     GuidHob = GetNextGuidHob (&gEfiAcpi20TableGuid, HobList);
     if (GuidHob != NULL) {
       AcpiTable = (ACPI_TABLE_HOB *)GET_GUID_HOB_DATA (GuidHob);
-      AsciiSPrint (ParamValue, sizeof (ParamValue), " %a0x%lx", ACPI_RSDP_CMDLINE_STR, AcpiTable->TableAddress);
+      AsciiSPrint (ParamValue, sizeof (ParamValue), " %a0x%lx", ACPI_RSDP_CMDLINE_STR, AcpiTable->Rsdp);
       AsciiStrCatS ((CHAR8 *)(UINTN)Bp->Hdr.CmdLinePtr, MAX_CMD_LINE_LEN, ParamValue);
       Bp->Hdr.CmdlineSize = (UINT32)AsciiStrLen ((CHAR8 *)(UINTN)Bp->Hdr.CmdLinePtr);
     }

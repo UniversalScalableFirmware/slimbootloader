@@ -239,7 +239,10 @@ IsTextShdr (
   Elf_Shdr *Shdr
   )
 {
-  return (BOOLEAN) ((Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == SHF_ALLOC);
+  if (((Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == SHF_ALLOC) || ((Shdr->sh_flags & (SHF_EXECINSTR | SHF_ALLOC)) == (SHF_EXECINSTR | SHF_ALLOC))) {
+    return TRUE;
+  }
+  return FALSE;
 }
 
 STATIC
@@ -260,6 +263,9 @@ IsDataShdr (
   )
 {
   if (IsHiiRsrcShdr(Shdr)) {
+    return FALSE;
+  }
+  if ((Shdr->sh_flags & (SHF_EXECINSTR | SHF_ALLOC)) == (SHF_EXECINSTR | SHF_ALLOC)) {
     return FALSE;
   }
   return (BOOLEAN) (Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == (SHF_ALLOC | SHF_WRITE);

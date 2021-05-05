@@ -414,6 +414,7 @@ class Symbols:
         reportLines = fdIn.readlines()
         fdIn.close()
 
+        calc_mode = 0
         moduleEntryPoint = "__ModuleEntryPoint"
         reportLine = reportLines[0]
         if reportLine.strip().find("Archive member included") != -1:
@@ -430,6 +431,14 @@ class Symbols:
             matchKeyGroupIndex = 2
             matchSymbolGroupIndex  = 1
             prefix = ''
+        elif reportLine.strip().find("VMA") != -1:
+            #CLANG DWARF
+            #401070   401070        0     1                 _ModuleEntryPoint
+            patchMapFileMatchString = "\s*([0-9a-f]+)\s+[0-9a-f]+\s+[0-9a-f]+\s+\d+\s+(\.?[\w]+)$"
+            matchKeyGroupIndex = 2
+            matchSymbolGroupIndex  = 1
+            prefix = '_'
+            calc_mode = 1
         else:
             #MSFT
             #0003:00000190       _gComBase                     00007a50     SerialPort
@@ -441,9 +450,11 @@ class Symbols:
         for reportLine in reportLines:
             match = re.match(patchMapFileMatchString, reportLine)
             if match is not None:
-                if prefix == '' and len(match.group(matchSymbolGroupIndex)) > 10:
-                    prefix = '_'
-                keyname = '%s' % (prefix + match.group(matchKeyGroupIndex))
+                keyname = match.group(matchKeyGroupIndex)
+                if not keyname.startswith('.'):
+                    if prefix == '' and len(match.group(matchSymbolGroupIndex)) > 10:
+                        prefix = '_'
+                    keyname = '%s' % (prefix + match.group(matchKeyGroupIndex))
                 modSymbols[keyname] = match.group(matchSymbolGroupIndex)
 
         # Handle extra module patchable PCD variable in Linux map since it might have different format
@@ -467,19 +478,32 @@ class Symbols:
         if not moduleEntryPoint in modSymbols:
             return 1
 
-        modEntry = '%s:%s' % (moduleName,moduleEntryPoint)
-        if not modEntry in self.dictSymbolAddress:
-            modKey = '%s:ENTRY' % moduleName
-            if modKey in self.dictModBase:
-                baseOffset = self.dictModBase['%s:ENTRY' % moduleName] - int(modSymbols[moduleEntryPoint], 16)
-            else:
-               return 2
+        if ('%s:TEXT' % moduleName) not in self.dictModBase:
+            return 2
+
+        if calc_mode == 1:
+            text_base = self.dictModBase['%s:TEXT' % moduleName]
+            data_base = self.dictModBase['%s:DATA' % moduleName]
+            curr_text = int(modSymbols['.text'], 16)
+            curr_data = int(modSymbols['.data'], 16)
         else:
-            baseOffset = int(self.dictSymbolAddress[modEntry], 16) - int(modSymbols[moduleEntryPoint], 16)
+            entry_base = self.dictModBase['%s:ENTRY' % moduleName]
+            modEntry = '%s:%s' % (moduleName, moduleEntryPoint)
+            curr_entry = int(modSymbols[moduleEntryPoint], 16)
+
         for symbol in modSymbols:
             fullSym = "%s:%s" % (moduleName, symbol)
             if not fullSym in self.dictSymbolAddress:
-                self.dictSymbolAddress[fullSym] = "0x00%08x" % (baseOffset+ int(modSymbols[symbol], 16))
+                address  = int(modSymbols[symbol], 16)
+                if calc_mode == 1:
+                    if address >= curr_data:
+                        new_address = data_base + (address - curr_data)
+                    else:
+                        new_address = text_base + (address - curr_text)
+                else:
+                    new_address = entry_base + (address - curr_entry)
+                self.dictSymbolAddress[fullSym] = "0x00%08x" % (new_address)
+
         return 0
 
     #
