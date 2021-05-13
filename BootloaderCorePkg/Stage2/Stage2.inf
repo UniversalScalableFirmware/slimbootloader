@@ -92,8 +92,8 @@
   gDeviceTableHobGuid
   gSmmInformationGuid
   gLoaderMpCpuTaskInfoGuid
-  gEfiAcpi20TableGuid
-  gEfiSmbiosTableGuid
+  gPldAcpiTableGuid
+  gPldSmbiosTableGuid
   gPldSmmRegisterInfoGuid
   gEfiSmmSmramMemoryGuid
   gSpiFlashInfoGuid

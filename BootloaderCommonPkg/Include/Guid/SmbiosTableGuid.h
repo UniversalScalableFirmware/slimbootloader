@@ -9,19 +9,23 @@
 #ifndef __SMBIOS_TABLE_GUID_H__
 #define __SMBIOS_TABLE_GUID_H__
 
+#include <UniversalPayload.h>
+
 ///
 /// SMBIOS TABLE HOB GUID
 ///
-extern EFI_GUID       gEfiSmbiosTableGuid;
-extern EFI_GUID       gEfiSmbios3TableGuid;
+extern GUID     gPldSmbios3TableGuid;
+extern GUID     gPldSmbiosTableGuid;
 
-#pragma pack(1) 
-/// 
-/// Bootloader SMBIOS table hob 
-/// 
-typedef struct { 
-  UINT64                  TableAddress;
-} SMBIOS_TABLE_HOB; 
-#pragma pack()  
+#pragma pack(1)
+///
+/// Bootloader SMBIOS table hob
+///
+typedef struct {
+  PLD_GENERIC_HEADER   PldHeader;
+  EFI_PHYSICAL_ADDRESS SmBiosEntryPoint;
+} PLD_SMBIOS_TABLE;
+
+#pragma pack()
 
 #endif

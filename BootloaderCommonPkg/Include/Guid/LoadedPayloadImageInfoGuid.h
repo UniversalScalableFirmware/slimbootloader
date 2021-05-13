@@ -9,22 +9,23 @@
 #ifndef __LOADED_PAYLOAD_IMAGE_INFO_GUID_H__
 #define __LOADED_PAYLOAD_IMAGE_INFO_GUID_H__
 
+#include <UniversalPayload.h>
+
 extern EFI_GUID gLoadedPayloadImageInfoGuid;
 
 #pragma pack(1)
 
 typedef struct {
-  CHAR8                   Name[16];
+  CHAR8                   Identifier[16];
   EFI_PHYSICAL_ADDRESS    Base;
   UINT64                  Size;
-} PAYLOAD_IMAGE_ENTRY;
+} PLD_EXTRA_DATA_ENTRY;
 
 typedef struct {
-  UINT8                  Revision;
-  UINT8                  Reserved[3];
-  UINT32                 EntryNum;
-  PAYLOAD_IMAGE_ENTRY    Entry[0];
-} LOADED_PAYLOAD_IMAGE_INFO;
+  PLD_GENERIC_HEADER     PldHeader;
+  UINT32                 Count;
+  PLD_EXTRA_DATA_ENTRY   Entry[0];
+} PLD_EXTRA_DATA;
 
 #pragma pack()
 

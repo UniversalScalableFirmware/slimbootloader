@@ -8,6 +8,7 @@
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/MemoryAllocationLib.h>
 #include <Library/BootloaderCommonLib.h>
 #include <Library/UniversalPayloadLib.h>
 #include <Library/ElfLib.h>
@@ -68,7 +69,7 @@ LoadElfPayload (
     } else if (AsciiStrnCmp(SectionName, PLD_EXTRA_SEC_NAME_PREFIX, PLD_EXTRA_SEC_NAME_PREFIX_LENGTH) == 0) {
       Status = GetElfSectionPos (&Context, Index, &Offset, &Size);
       if (!EFI_ERROR (Status) && (ExtraDataCount < ARRAY_SIZE(PayloadInfo->LoadedImage))) {
-        AsciiStrCpyS (PayloadInfo->LoadedImage[ExtraDataCount].Name, sizeof(PayloadInfo->LoadedImage[ExtraDataCount].Name), SectionName + PLD_EXTRA_SEC_NAME_PREFIX_LENGTH);
+        AsciiStrCpyS (PayloadInfo->LoadedImage[ExtraDataCount].Identifier, sizeof(PayloadInfo->LoadedImage[ExtraDataCount].Identifier), SectionName + PLD_EXTRA_SEC_NAME_PREFIX_LENGTH);
         PayloadInfo->LoadedImage[ExtraDataCount].Base = (UINTN)(Context.FileBase + Offset);
         PayloadInfo->LoadedImage[ExtraDataCount].Size = Size;
         ExtraDataCount++;
@@ -78,7 +79,8 @@ LoadElfPayload (
 
   // Always try to run at preferred address
   if (Context.ReloadRequired) {
-    Context.ImageAddress = Context.PreferredImageAddress;
+    //Context.ImageAddress = Context.PreferredImageAddress;
+    Context.ImageAddress = AllocatePages (EFI_SIZE_TO_PAGES (Context.ImageSize));
   }
 
   // Load ELF into the required base

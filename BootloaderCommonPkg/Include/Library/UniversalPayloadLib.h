@@ -9,27 +9,9 @@
 #define _UNIVERSAL_PAYLOAD_LIB_H_
 
 #include <Guid/LoadedPayloadImageInfoGuid.h>
-
-typedef  EFI_STATUS  (EFIAPI *UNIVERSAL_PAYLOAD_ENTRYPOINT) (VOID *HobList);
-
-#define PLD_IDENTIFIER                   SIGNATURE_32('U', 'P', 'L', 'D')
-#define PLD_INFO_SEC_NAME                ".upld_info"
-#define PLD_EXTRA_SEC_NAME_PREFIX        ".upld."
-#define PLD_EXTRA_SEC_NAME_PREFIX_LENGTH (sizeof (PLD_EXTRA_SEC_NAME_PREFIX) - 1)
+#include <UniversalPayload.h>
 
 #pragma pack(1)
-
-typedef struct {
-  UINT32                          Identifier;
-  UINT32                          HeaderLength;
-  UINT16                          SpecRevision;
-  UINT8                           Reserved[2];
-  UINT32                          Revision;
-  UINT32                          Attribute;
-  UINT32                          Capability;
-  CHAR8                           ProducerId[16];
-  CHAR8                           ImageId[16];
-} PLD_INFO_HEADER;
 
 #define  MAX_PLD_IMAGE_ENTRY      4
 typedef struct {
@@ -39,7 +21,7 @@ typedef struct {
   UINTN                           EntryPoint;
   UINTN                           PayloadBase;
   UINTN                           PayloadSize;
-  PAYLOAD_IMAGE_ENTRY             LoadedImage[MAX_PLD_IMAGE_ENTRY];
+  PLD_EXTRA_DATA_ENTRY            LoadedImage[MAX_PLD_IMAGE_ENTRY];
 } LOADED_PAYLOAD_INFO;
 
 #pragma pack()

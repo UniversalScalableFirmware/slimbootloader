@@ -520,7 +520,7 @@ BuildExtraInfoHob (
   SerialPortInfo = (SERIAL_PORT_INFO *)GetGuidHobData (NULL, NULL, &gLoaderSerialPortInfoGuid);
   if (SerialPortInfo != NULL) {
     PlatformUpdateHobInfo (&gLoaderSerialPortInfoGuid, SerialPortInfo);
-  }   
+  }
 
   // Build ACPI Hob
   SystemTableInfo = BuildGuidHob (&gLoaderSystemTableInfoGuid, sizeof (SYSTEM_TABLE_INFO));
@@ -641,30 +641,30 @@ BuildExtraInfoHob (
 
   // ACPI table HOB
   ACPI_TABLE_HOB   *AcpiHob;
-  AcpiHob = BuildGuidHob (&gEfiAcpi20TableGuid, sizeof (ACPI_TABLE_HOB));
+  AcpiHob = BuildGuidHob (&gPldAcpiTableGuid, sizeof (ACPI_TABLE_HOB));
   if (AcpiHob != NULL) {
     ZeroMem (AcpiHob, sizeof (ACPI_TABLE_HOB));
-    AcpiHob->TableAddress = S3Data->AcpiBase;
+    AcpiHob->Rsdp = S3Data->AcpiBase;
   }
 
   // SMBIOS table HOB
-  SMBIOS_TABLE_HOB   *SmbiosHob;
-  SmbiosHob = BuildGuidHob (&gEfiSmbiosTableGuid, sizeof (SMBIOS_TABLE_HOB));
+  PLD_SMBIOS_TABLE   *SmbiosHob;
+  SmbiosHob = BuildGuidHob (&gPldSmbiosTableGuid, sizeof (PLD_SMBIOS_TABLE));
   if (SmbiosHob != NULL) {
-    ZeroMem (SmbiosHob, sizeof (SMBIOS_TABLE_HOB));
-    SmbiosHob->TableAddress = PcdGet32 (PcdSmbiosTablesBase);
+    ZeroMem (SmbiosHob, sizeof (PLD_SMBIOS_TABLE));
+    SmbiosHob->SmBiosEntryPoint = PcdGet32 (PcdSmbiosTablesBase);
   }
 
   // Build serial port hob
   PldSerialPortInfo = BuildGuidHob (&gPldSerialPortInfoGuid, sizeof (PLD_SERIAL_PORT_INFO));
   if (PldSerialPortInfo != NULL) {
     ZeroMem (PldSerialPortInfo, sizeof (PLD_SERIAL_PORT_INFO));
-    PldSerialPortInfo->Reversion     = 0;
+    PldSerialPortInfo->PldHeader.Revision = 0;
     PldSerialPortInfo->UseMmio       = FALSE;
     PldSerialPortInfo->RegisterBase  = 0x3F8;
     PldSerialPortInfo->BaudRate      = 115200;
     PldSerialPortInfo->RegisterWidth = 1;
-    PlatformUpdateHobInfo (&gPldSerialPortInfoGuid, PldSerialPortInfo);  
+    PlatformUpdateHobInfo (&gPldSerialPortInfoGuid, PldSerialPortInfo);
   }
 
   // SMM register HOB

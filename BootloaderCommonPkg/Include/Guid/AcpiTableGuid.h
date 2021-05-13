@@ -9,18 +9,21 @@
 #ifndef __ACPI_TABLE_GUID_H__
 #define __ACPI_TABLE_GUID_H__
 
+#include <UniversalPayload.h>
+
 ///
 /// ACPI TABLE HOB GUID
 ///
-extern EFI_GUID            gEfiAcpi20TableGuid;
+extern EFI_GUID            gPldAcpiTableGuid;
 
-#pragma pack(1) 
-/// 
-/// Bootloader acpi table hob 
-/// 
-typedef struct { 
-   UINT64                  TableAddress;
+#pragma pack(1)
+///
+/// Bootloader acpi table hob
+///
+typedef struct {
+  PLD_GENERIC_HEADER   PldHeader;
+  EFI_PHYSICAL_ADDRESS Rsdp;
 } ACPI_TABLE_HOB;
-#pragma pack()  
+#pragma pack()
 
 #endif

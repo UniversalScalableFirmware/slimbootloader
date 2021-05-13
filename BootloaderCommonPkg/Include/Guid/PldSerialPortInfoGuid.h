@@ -9,17 +9,21 @@
 #ifndef __PLD_SERIAL_PORT_INFO_GUID_H__
 #define __PLD_SERIAL_PORT_INFO_GUID_H__
 
+#include <UniversalPayload.h>
+
 ///
 /// Serial Port Information GUID
 ///
 extern EFI_GUID gPldSerialPortInfoGuid;
 
-typedef struct {  
-  UINT16        Reversion;
-  BOOLEAN       UseMmio;
-  UINT8         RegisterWidth;
-  UINT32        BaudRate;
-  UINT64        RegisterBase;
+#pragma pack(1)
+typedef struct {
+  PLD_GENERIC_HEADER   PldHeader;
+  UINT16               Revision;
+  BOOLEAN              UseMmio;
+  UINT8                RegisterWidth;
+  UINT32               BaudRate;
+  UINT64               RegisterBase;
 } PLD_SERIAL_PORT_INFO;
-
+#pragma pack()
 #endif

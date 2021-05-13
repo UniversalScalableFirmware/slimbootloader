@@ -151,7 +151,7 @@ NormalBootPath (
   UINT32                          HobSize;
   UINT16                          PldMachine;
   LOADED_PAYLOAD_INFO             PayloadInfo;
-  LOADED_PAYLOAD_IMAGE_INFO      *PldImgInfo;
+  PLD_EXTRA_DATA                 *PldImgInfo;
 
   LdrGlobal = (LOADER_GLOBAL_DATA *)GetLoaderGlobalDataPointer();
 
@@ -193,16 +193,13 @@ NormalBootPath (
     if (Status == EFI_SUCCESS) {
       if (PayloadInfo.Info.Identifier == PLD_IDENTIFIER) {
         DEBUG ((DEBUG_INFO, "Univeral Payload %a v%08X\n", PayloadInfo.Info.ImageId, PayloadInfo.Info.Revision));
-        HobSize    = sizeof (LOADED_PAYLOAD_IMAGE_INFO) + sizeof(PAYLOAD_IMAGE_ENTRY) * (PayloadInfo.ImageCount + 1);
-        PldImgInfo = (LOADED_PAYLOAD_IMAGE_INFO *)BuildGuidHob (&gLoadedPayloadImageInfoGuid, HobSize);
+        HobSize    = sizeof (PLD_EXTRA_DATA) + sizeof(PLD_EXTRA_DATA_ENTRY) * PayloadInfo.ImageCount;
+        PldImgInfo = (PLD_EXTRA_DATA *)BuildGuidHob (&gLoadedPayloadImageInfoGuid, HobSize);
         if (PldImgInfo != NULL) {
           ZeroMem (PldImgInfo, HobSize);
-          PldImgInfo->Revision = 1;
-          PldImgInfo->EntryNum = PayloadInfo.ImageCount + 1;
-          AsciiStrCpyS (PldImgInfo->Entry[0].Name, sizeof(PldImgInfo->Entry[0].Name), "image");
-          PldImgInfo->Entry[0].Base = PayloadInfo.PayloadBase;
-          PldImgInfo->Entry[0].Size = PayloadInfo.PayloadSize;
-          CopyMem (&PldImgInfo->Entry[1], &PayloadInfo.LoadedImage, PayloadInfo.ImageCount * sizeof(PAYLOAD_IMAGE_ENTRY));
+          PldImgInfo->PldHeader.Revision = 0;
+          PldImgInfo->Count = PayloadInfo.ImageCount;
+          CopyMem (&PldImgInfo->Entry[0], &PayloadInfo.LoadedImage, sizeof(PLD_EXTRA_DATA_ENTRY) * PayloadInfo.ImageCount);
         }
       }
       PldMachine = (UINT16)PayloadInfo.Machine;
