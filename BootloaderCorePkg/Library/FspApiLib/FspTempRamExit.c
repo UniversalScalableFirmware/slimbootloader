@@ -45,7 +45,7 @@ CallFspTempRamExit (
   TempRamExit = (FSP_TEMP_RAM_EXIT)(UINTN)(FspHeader->ImageBase + FspHeader->TempRamExitEntryOffset);
 
   DEBUG ((DEBUG_INFO, "Call FspTempRamExit ... "));
-  if (IS_X64) {
+  if (IS_X64 && !(FspHeader->ComponentAttribute & BIT2)) {
     Status = Execute32BitCode ((UINTN)TempRamExit, (UINTN)0, (UINTN)0, TRUE);
     Status = (UINTN)LShiftU64 (Status & ((UINTN)MAX_INT32 + 1), 32) | (Status & MAX_INT32);
   } else {

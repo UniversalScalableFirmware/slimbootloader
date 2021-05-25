@@ -67,13 +67,15 @@ CallFspMemoryInit (
   FspMemoryInit = (FSP_MEMORY_INIT)(UINTN)(FspHeader->ImageBase + \
                                            FspHeader->FspMemoryInitEntryOffset);
 
-  DEBUG ((DEBUG_INFO, "Call FspMemoryInit ... "));
+  DEBUG ((DEBUG_INFO, "Call FspMemoryInit "));
 
   NewStack = PcdGet32 (PcdFSPMStackTop);
   if (NewStack == 0xFFFFFFFF) {
     NewStack = FspmUpdCommon->FspmArchUpd.StackBase + FspmUpdCommon->FspmArchUpd.StackSize;
   }
-  if (IS_X64) {
+
+  if (IS_X64 && !(FspHeader->ComponentAttribute & BIT2)) {
+    DEBUG ((DEBUG_INFO, "(x86)"));
     if (NewStack != 0) {
       Status = FspmSwitchStack ((VOID *)(UINTN)FspMemoryInit, (VOID *)FspmUpd, (VOID *)HobList, (VOID *)NewStack);
     } else {
@@ -81,13 +83,18 @@ CallFspMemoryInit (
     }
     Status = (UINTN)LShiftU64 (Status & ((UINTN)MAX_INT32 + 1), 32) | (Status & MAX_INT32);
   } else {
+    if (IS_X64) {
+      DEBUG ((DEBUG_INFO, "(x64)"));
+    } else {
+      DEBUG ((DEBUG_INFO, "(x86)"));
+    }
     if (NewStack != 0) {
       Status = FspmSwitchStack ((VOID *)(UINTN)FspMemoryInit, (VOID *)&FspmUpd, (VOID *)HobList, (VOID *)NewStack);
     } else {
       Status = FspMemoryInit (&FspmUpd, HobList);
     }
   }
-  DEBUG ((DEBUG_INFO, "%r\n", Status));
+  DEBUG ((DEBUG_INFO, " ... %r\n", Status));
 
   return Status;
 }

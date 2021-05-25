@@ -77,13 +77,13 @@ LINEAR_CODE_SEL     equ $-GDT_BASE
     DB      0            ; base 31:24
 
 %ifdef ARCH_X64
-; not used. padding to ensure 0x20 is 64 bit segment descriptor
-LINEAR_ZERO_SEL     equ $-GDT_BASE
-    DW      0            ; limit 15:0
+; linear code segment descriptor
+LINEAR_CODE16_SEL     equ $-GDT_BASE
+    DW      0xffff       ; limit 15:0
     DW      0            ; base 15:0
     DB      0            ; base 23:16
-    DB      0            ; sys flag, dpl, type
-    DB      0            ; limit 19:16, flags
+    DB      PRESENT_FLAG(1)|DPL(0)|SYSTEM_FLAG(1)|DESC_TYPE(CODE32_TYPE)
+    DB      GRANULARITY_FLAG(1)|DEFAULT_SIZE32(0)|CODE64_FLAG(0)|UPPER_LIMIT(0xf)
     DB      0            ; base 31:24
 
 ; linear code (64-bit) segment descriptor
@@ -110,6 +110,7 @@ o32 lgdt    [cs:bx]
     or      eax, SEC_DEFAULT_CR0
     mov     cr0, eax
     jmp     LINEAR_CODE_SEL:dword ADDR_OF(jumpTo32BitAndLandHere)
+
 BITS    32
 jumpTo32BitAndLandHere:
     mov     eax, SEC_DEFAULT_CR4

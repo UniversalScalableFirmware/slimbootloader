@@ -14,12 +14,44 @@
 ;
 ;------------------------------------------------------------------------------
 
+    DEFAULT REL
+    SECTION .text
+;---------------------
+; FSP API offset
+%define FSP_HEADER_TEMPRAMINIT_OFFSET 0x30
 
-SECTION .text
+extern  ASM_PFX(PcdGet32(PcdFSPTBase))
+extern  ASM_PFX(TempRamInitParams)
 
-;
-; FspTampInit has been moved into VTF0 in x64 mode
-;
-global ASM_PFX(DummyCode)
-ASM_PFX(DummyCode):
-    ret
+global  ASM_PFX(FspTempRamInit)
+ASM_PFX(FspTempRamInit):
+        ;
+        ; This hook is called to initialize temporay RAM
+        ; ESI, EDI need to be preserved
+        ; ESP contains return address
+        ; ECX, EDX return the temprary RAM start and end
+        ;
+
+        ;
+        ; Get FSP-T base in EAX
+        ;
+        mov     rbp, rsp
+        lea     rax, [ASM_PFX(PcdGet32(PcdFSPTBase))]
+        mov     eax, dword [rax]
+
+        ;
+        ; Find the fsp info header
+        ; Jump to TempRamInit API
+        ;
+        add     eax, dword [rax + 094h + FSP_HEADER_TEMPRAMINIT_OFFSET]
+        lea     rcx, [ASM_PFX(TempRamInitParams)]
+        lea     rsp, [TempRamInitStack]
+        jmp     rax
+
+TempRamInitDone:
+        mov     rsp, rbp
+        jmp     rsp
+
+align 16
+TempRamInitStack:
+        DQ      TempRamInitDone

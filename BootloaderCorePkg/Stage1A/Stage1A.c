@@ -7,7 +7,9 @@
 
 #include "Stage1A.h"
 
-CONST CHAR8*  mBootloaderName = "Intel Slim Bootloader";
+CONST CHAR8*  mBootloaderName  = "Intel Slim Bootloader";
+
+CONST UINT32  mPageTableLength = 8 * EFI_PAGE_SIZE;
 
 CONST CDATA_BLOB mCfgBlobTmpl = {
   CFG_DATA_SIGNATURE,
@@ -449,7 +451,7 @@ SecStartup (
   Stage1aAsmParam = (STAGE1A_ASM_PARAM *)Params;
 
   // Init global data
-  PageTblSize = IS_X64 ? 8 * EFI_PAGE_SIZE : 0;
+  PageTblSize = IS_X64 ? mPageTableLength : 0;
   LdrGlobal = &LdrGlobalData;
   ZeroMem (LdrGlobal, sizeof (LOADER_GLOBAL_DATA));
   StackTop = (UINT32)(UINTN)Params + sizeof (STAGE1A_ASM_PARAM);

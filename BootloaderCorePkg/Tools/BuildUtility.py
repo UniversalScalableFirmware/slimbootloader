@@ -1230,20 +1230,3 @@ def gen_pci_enum_policy_info (policy_dict):
         raise Exception ("Failed to generate PCI_ENUM_POLICY_INFO!")
 
     return struct_string
-
-def get_vtf_patch_base (stage1a_fd):
-    stage1a_bin = bytearray (get_file_data (stage1a_fd))
-    dlen = len(stage1a_bin) & ~0xF
-    if dlen > 0x1000:
-      dlen = 0x1000
-
-    found = 0
-    for i in range (0, dlen, 16):
-      if stage1a_bin[-i:-i+8] == b"\xF0\x0F\xAA\x55\x78\x56\x34\x12":
-        found = 0x100000000 - i
-        break
-
-    if not found:
-      raise Exception ("Could not find patchable data region in VTF !")
-
-    return found
