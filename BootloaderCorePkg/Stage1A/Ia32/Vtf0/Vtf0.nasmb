@@ -18,7 +18,7 @@
 
 %include "CommonMacros.inc"
 %ifdef ARCH_X64
-  %include "X64/PageTables.asm"
+  %include "X64/PageTablesPte1G.asm"
 %endif
 
 %ifdef ARCH_X64
